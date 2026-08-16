@@ -1,0 +1,25 @@
+name: q13 q167 source semantic split
+
+on:
+  pull_request:
+    paths:
+      - 'research/Q13-Q167-SOURCE-SEMANTIC-SPLIT.md'
+      - 'research/verify_q13_q167_source_semantic_split.py'
+      - '.github/workflows/q13-q167-source-semantic-split.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_q13_q167_source_semantic_split.py
+      - name: Verify q13 q167 semantic split
+        run: python3 research/verify_q13_q167_source_semantic_split.py --json
