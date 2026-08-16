@@ -1,0 +1,123 @@
+name: Bootstrap CENTL-CBX corpus
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-cbx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout CENTL-CBX
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch CBX source corpus
+        run: |
+          git clone --depth 1 --branch agent/cbx-kernel \
+            https://github.com/chasebryan/centl.git /tmp/centl
+
+      - name: Populate focused proving ground
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/centl/research/erdos-straus
+
+          mkdir -p kernel research docs
+          rm -rf kernel/*
+          cp -a "$SRC/cbx.kernel/." kernel/
+
+          # Keep this repository hyper-focused. Pull theorem/proof objects that
+          # participate in the live CBX / h169 / Type-II program rather than
+          # copying the entire historical Erdős–Straus archive.
+          patterns=(
+            'K27-*'
+            'K31-*'
+            'K35-*'
+            'H169-*'
+            'POST-K23-*'
+            'ROUTE-A-K51-*'
+            'ROUTE-B-K47-*'
+            'TEN-COFACTOR-*'
+            '*TYPE-II*'
+            '*DECOMPOSITION-FRAMEWORK*'
+            'verify_k27_*'
+            'verify_k31_*'
+            'verify_k35_*'
+            'verify_h169_*'
+            'verify_post_k23_*'
+            'verify_route_a_k51_*'
+            'verify_route_b_k47_*'
+            'verify_ten_cofactor_*'
+            'propagate_h169_*'
+          )
+
+          rm -rf research/*
+          for pattern in "${patterns[@]}"; do
+            while IFS= read -r -d '' file; do
+              cp "$file" research/
+            done < <(find "$SRC" -maxdepth 1 -type f -name "$pattern" -print0)
+          done
+
+          # Stable frontier/context documents.
+          for name in CURRENT-FRONTIER.md RESEARCH-PROPORTIONS.md FUTURE-OPERATOR-INSTRUCTIONS.md; do
+            if [[ -f "$SRC/$name" ]]; then
+              cp "$SRC/$name" "research/$name"
+            fi
+          done
+
+          cat > docs/MIGRATION.md <<'EOF'
+          # CENTL-CBX migration provenance
+
+          This repository is the focused successor proving ground for the CBX
+          and exact Erdős–Straus research machine previously developed inside
+          `chasebryan/centl`.
+
+          Initial source:
+
+          - repository: `chasebryan/centl`
+          - branch: `agent/cbx-kernel`
+          - source area: `research/erdos-straus/`
+
+          Migration policy:
+
+          - the complete `cbx.kernel/` executable surface is copied to `kernel/`;
+          - active K27/K31/K35/h169/Type-II/route-local theorem and verifier
+            modules are copied to `research/`;
+          - broad historical CENTL application code is intentionally not copied;
+          - future CBX-focused research belongs here.
+
+          The Bryan Entanglement Cross / BREC layer remains observational and
+          scheduling metadata. Exact arithmetic state is the sole proof-bearing
+          authority.
+          EOF
+
+          SOURCE_SHA=$(git -C /tmp/centl rev-parse HEAD)
+          printf '%s\n' "$SOURCE_SHA" > docs/SOURCE-CENTL-CBX-SHA
+
+      - name: Sanity check migrated kernel
+        run: |
+          test -f kernel/README.md
+          test -f kernel/analyze.py
+          test -f kernel/analyze_geometry.py
+          python3 -m py_compile kernel/*.py
+          test "$(find research -maxdepth 1 -type f | wc -l)" -gt 5
+
+      - name: Commit migrated corpus
+        run: |
+          git config user.name 'CENTL-CBX bootstrap'
+          git config user.email 'actions@users.noreply.github.com'
+          git add kernel research docs
+          if git diff --cached --quiet; then
+            echo 'CBX corpus already synchronized.'
+            exit 0
+          fi
+          git commit -m 'Bootstrap focused CBX research corpus'
+          git push origin HEAD:main
