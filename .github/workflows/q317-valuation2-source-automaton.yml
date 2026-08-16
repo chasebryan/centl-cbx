@@ -1,0 +1,25 @@
+name: q317 valuation-two source automaton
+
+on:
+  pull_request:
+    paths:
+      - 'research/Q317-VALUATION2-SOURCE-AUTOMATON.md'
+      - 'research/verify_q317_valuation2_source_automaton.py'
+      - '.github/workflows/q317-valuation2-source-automaton.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_q317_valuation2_source_automaton.py
+      - name: Verify valuation-two fixed point
+        run: python3 research/verify_q317_valuation2_source_automaton.py --json
