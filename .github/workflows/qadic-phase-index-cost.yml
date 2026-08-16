@@ -1,0 +1,25 @@
+name: q-adic phase index cost
+
+on:
+  pull_request:
+    paths:
+      - 'research/QADIC-PHASE-INDEX-COST.md'
+      - 'research/verify_qadic_phase_index_cost.py'
+      - '.github/workflows/qadic-phase-index-cost.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_qadic_phase_index_cost.py
+      - name: Verify exact q-adic lattice indices
+        run: python3 research/verify_qadic_phase_index_cost.py --json
