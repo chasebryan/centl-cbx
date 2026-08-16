@@ -1,0 +1,25 @@
+name: k195 k15 survivor normal form
+
+on:
+  pull_request:
+    paths:
+      - 'research/K195-K15-SURVIVOR-NORMAL-FORM.md'
+      - 'research/verify_k195_k15_survivor_normal_form.py'
+      - '.github/workflows/k195-k15-survivor-normal-form.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k195_k15_survivor_normal_form.py
+      - name: Verify exact k15 two-sector theorem
+        run: python3 research/verify_k195_k15_survivor_normal_form.py --json
