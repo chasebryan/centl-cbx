@@ -1,0 +1,25 @@
+name: k195 early ancestry survivor grammar
+
+on:
+  pull_request:
+    paths:
+      - 'research/K195-EARLY-ANCESTRY-SURVIVOR-GRAMMAR.md'
+      - 'research/verify_k195_early_ancestry_survivor_grammar.py'
+      - '.github/workflows/k195-early-ancestry-survivor-grammar.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k195_early_ancestry_survivor_grammar.py
+      - name: Verify exact k3 k7 k11 grammar
+        run: python3 research/verify_k195_early_ancestry_survivor_grammar.py --json
