@@ -1,0 +1,31 @@
+name: Persistent-source q-adic valuation ladder
+
+on:
+  pull_request:
+    paths:
+      - 'research/PERSISTENT-SOURCE-QADIC-VALUATION-LADDER.md'
+      - 'research/D-SELECTOR-SINGLE-SOURCE-SATURATION-BARRIER.md'
+      - 'research/verify_persistent_source_qadic_valuation_ladder.py'
+      - 'research/verify_d_selector_single_source_saturation_barrier.py'
+      - '.github/workflows/persistent-source-qadic-valuation-ladder.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifiers
+        run: |
+          python3 -m py_compile research/verify_persistent_source_qadic_valuation_ladder.py
+          python3 -m py_compile research/verify_d_selector_single_source_saturation_barrier.py
+      - name: Verify q-adic valuation ladder
+        run: python3 research/verify_persistent_source_qadic_valuation_ladder.py --json
+      - name: Re-verify valuation-safe one-source barrier
+        run: python3 research/verify_d_selector_single_source_saturation_barrier.py --json

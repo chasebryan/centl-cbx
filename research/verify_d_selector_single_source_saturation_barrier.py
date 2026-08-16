@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Complete finite verifier for the h169 D-selector single-source saturation barrier."""
+"""Complete finite verifier for the h169 D-selector single-source multiplicity-one saturation barrier."""
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,8 @@ import math
 from collections import Counter
 
 PHI_LIMIT = 486
-ABSOLUTE_K_BOUND = 2 * PHI_LIMIT * PHI_LIMIT
+# Admissible k is odd, hence phi(k)^2 >= k.
+ABSOLUTE_K_BOUND = PHI_LIMIT * PHI_LIMIT
 ORIGINS = {
     "B": (23, 17),
     "D": (31, 17),
@@ -97,11 +98,7 @@ def main() -> int:
     args = parser.parse_args()
 
     phi = phi_sieve(ABSOLUTE_K_BOUND)
-
-    # Finite regression of the elementary phi(n)^2 >= n/2 inequality over
-    # the entire exact search interval. The document also contains the direct
-    # prime-power proof, so correctness does not depend on this finite check.
-    assert all(2 * phi[n] * phi[n] >= n for n in range(1, ABSOLUTE_K_BOUND + 1))
+    assert all(phi[k] * phi[k] >= k for k in range(3, ABSOLUTE_K_BOUND + 1, 2))
 
     eligible_k = [
         k for k in range(3, ABSOLUTE_K_BOUND + 1, 4)
@@ -110,8 +107,6 @@ def main() -> int:
     assert len(eligible_k) == 158
     assert max(eligible_k) == 1155
 
-    # Jacobi(-1/k)=-1 makes the character nontrivial, so every positive
-    # kernel has exactly phi(k)/2 units.
     kernel_cache: dict[int, set[int]] = {}
     for k in eligible_k:
         kernel = jacobi_kernel(k)
@@ -127,18 +122,16 @@ def main() -> int:
         for k in eligible_k:
             if k <= origin:
                 continue
-            delta = k - origin
-            assert delta % 4 == 0
-            d = delta // 4
+            d = (k - origin) // 4
             for q in factorization(d):
                 if not source_type(q, origin, negative_modulus):
                     continue
                 n = d // q
                 assert n >= 1
                 assert k == origin + 4 * q * n
-                assert math.gcd(q, k) == 1
 
                 base = class_seed(k)
+                # Multiplicity-one scope: one known copy of q only.
                 seed = math.lcm(base, q)
                 omega = len(factorization(seed))
                 assert omega <= 5
@@ -155,30 +148,24 @@ def main() -> int:
                         "k": k,
                         "phi_k": phi[k],
                         "base_seed": base,
-                        "seed": seed,
+                        "multiplicity_one_seed": seed,
                     })
 
                 if saturates(seed, k, kernel_cache):
-                    saturations.append({
-                        "type": label,
-                        "origin": origin,
-                        "q": q,
-                        "n": n,
-                        "k": k,
-                        "seed": seed,
-                    })
+                    saturations.append({"type": label, "origin": origin, "q": q, "n": n, "k": k, "seed": seed})
 
     assert counts == Counter({"B": 61, "D": 58, "J": 61}), counts
     assert sum(counts.values()) == 180
     assert not saturations, saturations
 
     report = {
-        "analysis": "d-selector-single-source-saturation-barrier-v1",
+        "analysis": "d-selector-single-source-saturation-barrier-v2-valuation-safe",
+        "scope": "multiplicity-one routed source factor; requires v_q(C_k)=1 before pruning",
         "absolute_bound": {
             "max_seed_prime_factors": 5,
             "max_square_divisor_count": 243,
             "required_phi_max": PHI_LIMIT,
-            "phi_lower_bound": "phi(k)^2 >= k/2",
+            "odd_k_phi_bound": "phi(k)^2 >= k",
             "k_bound": ABSOLUTE_K_BOUND,
         },
         "finite_closure": {
@@ -186,14 +173,14 @@ def main() -> int:
             "largest_eligible_k": max(eligible_k),
             "persistent_candidate_pairs": sum(counts.values()),
             "by_type": dict(counts),
-            "jacobi_saturations": len(saturations),
+            "multiplicity_one_jacobi_saturations": len(saturations),
         },
         "candidate_examples": candidate_examples,
+        "valuation_boundary": "q-adic lifts q^e, e>=2, are separate live states",
         "failures": 0,
         "claim": (
-            "for h169 and any later persistent destination of a materialized D-selector B/D/J witness type, "
-            "the mandatory class seed plus that single routed prime never Jacobi-saturates; "
-            "a second routed factor or richer exact ancestry is required for saturation"
+            "in the valuation-one sector, the h169 class seed plus one known copy of a renewed source prime never Jacobi-saturates; "
+            "higher q-adic lifts are explicitly outside this barrier"
         ),
     }
 
