@@ -1,0 +1,25 @@
+name: k15 Route-B source renewal
+
+on:
+  pull_request:
+    paths:
+      - 'research/K15-ROUTE-B-SOURCE-RENEWAL.md'
+      - 'research/verify_k15_route_b_source_renewal.py'
+      - '.github/workflows/k15-route-b-source-renewal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k15_route_b_source_renewal.py
+      - name: Verify k15 Route-B source renewal
+        run: python3 research/verify_k15_route_b_source_renewal.py --json
