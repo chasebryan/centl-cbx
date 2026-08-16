@@ -1,0 +1,25 @@
+name: k195 certified k35 ancestry anchor
+
+on:
+  pull_request:
+    paths:
+      - 'research/K195-K35-ANCESTRY-ANCHOR.md'
+      - 'research/verify_k195_k35_ancestry_anchor.py'
+      - '.github/workflows/k195-k35-ancestry-anchor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k195_k35_ancestry_anchor.py
+      - name: Verify prime certificate, ancestry, and k35 geometry
+        run: python3 research/verify_k195_k35_ancestry_anchor.py --json
