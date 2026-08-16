@@ -1,0 +1,25 @@
+name: k15 q19 square-lift k167 gate
+
+on:
+  pull_request:
+    paths:
+      - 'research/K15-Q19-SQUARE-LIFT-K167.md'
+      - 'research/verify_k15_q19_square_lift_k167.py'
+      - '.github/workflows/k15-q19-square-lift-k167.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k15_q19_square_lift_k167.py
+      - name: Verify q19 square-lift progress gate
+        run: python3 research/verify_k15_q19_square_lift_k167.py --json
