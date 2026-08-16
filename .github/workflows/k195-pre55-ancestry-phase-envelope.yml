@@ -1,0 +1,25 @@
+name: k195 pre55 ancestry phase envelope
+
+on:
+  pull_request:
+    paths:
+      - 'research/K195-PRE55-ANCESTRY-PHASE-ENVELOPE.md'
+      - 'research/verify_k195_pre55_ancestry_phase_envelope.py'
+      - '.github/workflows/k195-pre55-ancestry-phase-envelope.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k195_pre55_ancestry_phase_envelope.py
+      - name: Verify exact phase envelope
+        run: python3 research/verify_k195_pre55_ancestry_phase_envelope.py --json
