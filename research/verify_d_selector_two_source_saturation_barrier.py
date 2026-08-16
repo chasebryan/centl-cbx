@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Complete verifier for D-selector two-source synchronization and saturation barrier."""
+"""Complete verifier for the D-selector two-source multiplicity-one saturation barrier."""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,8 @@ from array import array
 from collections import Counter
 
 PHI_LIMIT = 1458
-ABSOLUTE_K_BOUND = 2 * PHI_LIMIT * PHI_LIMIT
+# Every admissible k is odd, so phi(k)^2 >= k exactly.
+ABSOLUTE_K_BOUND = PHI_LIMIT * PHI_LIMIT
 TYPES = {
     "B": (23, 17),
     "D": (31, 17),
@@ -105,6 +106,9 @@ def main() -> int:
     args = parser.parse_args()
 
     phi = phi_sieve(ABSOLUTE_K_BOUND)
+    # Direct finite check of the odd-k strengthening used in the document.
+    assert all(phi[k] * phi[k] >= k for k in range(3, ABSOLUTE_K_BOUND + 1, 2))
+
     eligible = [
         k for k in range(3, ABSOLUTE_K_BOUND + 1, 4)
         if phi[k] <= PHI_LIMIT
@@ -136,10 +140,6 @@ def main() -> int:
             for q1 in available[left]:
                 for q2 in available[right]:
                     if q1 == q2:
-                        # Actual D-selector witnesses occupy distinct odd
-                        # reservoirs. The abstract enumeration may encounter a
-                        # prime satisfying two character types, but such a same-q
-                        # pair is not an allowed renewed-source pair.
                         continue
                     assert math.gcd(q1, q2) == 1
                     n1 = (k - j1) // (4 * q1)
@@ -152,6 +152,9 @@ def main() -> int:
                     assert (k - k0) % period == 0
 
                     base = class_seed(k)
+                    # Multiplicity-one theorem: each routed source contributes
+                    # exactly one known source factor. Higher q-adic valuation is
+                    # explicitly out of scope.
                     seed = math.lcm(base, q1, q2)
                     omega = len(factorization(seed))
                     assert omega <= 6
@@ -173,7 +176,7 @@ def main() -> int:
                             "sync_period": period,
                             "phi_k": int(phi[k]),
                             "base_seed": base,
-                            "two_source_seed": seed,
+                            "multiplicity_one_seed": seed,
                         })
 
                     kernel = kernel_cache.setdefault(k, jacobi_kernel(k))
@@ -193,11 +196,13 @@ def main() -> int:
     assert not saturations, saturations
 
     report = {
-        "analysis": "d-selector-two-source-saturation-barrier-v1",
+        "analysis": "d-selector-two-source-saturation-barrier-v2-valuation-safe",
+        "scope": "multiplicity-one routed source factors only",
         "absolute_bound": {
             "max_seed_prime_factors": 6,
             "max_square_divisor_count": 729,
             "required_phi_max": PHI_LIMIT,
+            "odd_k_phi_bound": "phi(k)^2 >= k",
             "k_bound": ABSOLUTE_K_BOUND,
         },
         "synchronization": {
@@ -210,14 +215,17 @@ def main() -> int:
             "synchronized_candidate_pairs": sum(counts.values()),
             "by_pair_type": dict(counts),
             "largest_synchronized_candidate_k": max(candidate_ks),
-            "jacobi_saturations": len(saturations),
+            "multiplicity_one_jacobi_saturations": len(saturations),
         },
         "examples": examples,
+        "valuation_boundary": (
+            "q-adic lifts q^e with e>=2 are not covered; unknown valuation must not be treated as exponent1"
+        ),
         "failures": 0,
         "claim": (
             "every distinct pair of materialized D-selector renewed sources has a common persistent CRT ladder, "
-            "but the bare h169 class seed plus those two sources never Jacobi-saturates any common destination; "
-            "bare saturation therefore requires at least three renewed sources or additional proof-bearing ancestry"
+            "but the bare h169 class seed plus one known copy of each source never Jacobi-saturates; "
+            "q-adic valuation lifts remain live and require separate analysis"
         ),
     }
 
