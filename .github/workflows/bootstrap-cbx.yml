@@ -34,9 +34,6 @@ jobs:
           rm -rf kernel/*
           cp -a "$SRC/cbx.kernel/." kernel/
 
-          # Keep this repository hyper-focused. Pull theorem/proof objects that
-          # participate in the live CBX / h169 / Type-II program rather than
-          # copying the entire historical Erdős–Straus archive.
           patterns=(
             'K27-*'
             'K31-*'
@@ -66,7 +63,6 @@ jobs:
             done < <(find "$SRC" -maxdepth 1 -type f -name "$pattern" -print0)
           done
 
-          # Stable frontier/context documents.
           for name in CURRENT-FRONTIER.md RESEARCH-PROPORTIONS.md FUTURE-OPERATOR-INSTRUCTIONS.md; do
             if [[ -f "$SRC/$name" ]]; then
               cp "$SRC/$name" "research/$name"
@@ -119,5 +115,7 @@ jobs:
             echo 'CBX corpus already synchronized.'
             exit 0
           fi
-          git commit -m 'Bootstrap focused CBX research corpus'
+          git commit -m 'Sync focused CBX research corpus'
           git push origin HEAD:main
+
+# sync trigger: 2026-08-16 frontier PRs 303-305
