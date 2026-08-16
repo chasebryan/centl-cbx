@@ -1,0 +1,73 @@
+name: Import legacy character-routing modules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-character-routing.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch legacy CBX source
+        run: |
+          git clone --depth 1 --branch agent/cbx-kernel \
+            https://github.com/chasebryan/centl.git /tmp/centl
+
+      - name: Add character-routing proof modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/centl/research/erdos-straus
+          mkdir -p research
+          patterns=(
+            '*CHARACTER*'
+            '*PROMOTION*'
+            '*REPULSION*'
+            '*JACOBI*'
+            'classify_*character*'
+            'analyze_*character*'
+            'verify_*character*'
+            'classify_*promotion*'
+            'analyze_*promotion*'
+            'verify_*promotion*'
+            'classify_*repulsion*'
+            'analyze_*repulsion*'
+            'verify_*repulsion*'
+            'classify_jacobi*'
+            'analyze_jacobi*'
+            'verify_jacobi*'
+          )
+          for pattern in "${patterns[@]}"; do
+            while IFS= read -r -d '' file; do
+              cp "$file" research/
+            done < <(find "$SRC" -maxdepth 1 -type f -name "$pattern" -print0)
+          done
+
+      - name: Verify imported Python
+        run: |
+          for f in research/*character*.py research/*promotion*.py research/*repulsion*.py research/*jacobi*.py; do
+            [[ -e "$f" ]] || continue
+            python3 -m py_compile "$f"
+          done
+          find research -type d -name '__pycache__' -prune -exec rm -rf {} +
+
+      - name: Commit additive import
+        run: |
+          git config user.name 'CENTL-CBX migration'
+          git config user.email 'actions@users.noreply.github.com'
+          git add research
+          if git diff --cached --quiet; then
+            echo 'No new character-routing modules to import.'
+            exit 0
+          fi
+          git commit -m 'Import character-routing proof modules'
+          git push origin HEAD:main
