@@ -1,0 +1,25 @@
+name: valuation output-prime ceiling
+
+on:
+  pull_request:
+    paths:
+      - 'research/VALUATION-OUTPUT-PRIME-CEILING.md'
+      - 'research/verify_valuation_output_prime_ceiling.py'
+      - '.github/workflows/valuation-output-prime-ceiling.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_valuation_output_prime_ceiling.py
+      - name: Verify valuation/output ceiling
+        run: python3 research/verify_valuation_output_prime_ceiling.py --json
