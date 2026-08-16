@@ -1,0 +1,25 @@
+name: bounded-complexity character finiteness
+
+on:
+  pull_request:
+    paths:
+      - 'research/BOUNDED-COMPLEXITY-CHARACTER-FINITENESS.md'
+      - 'research/verify_bounded_complexity_character_finiteness.py'
+      - '.github/workflows/bounded-complexity-character-finiteness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_bounded_complexity_character_finiteness.py
+      - name: Verify bounded-complexity finiteness
+        run: python3 research/verify_bounded_complexity_character_finiteness.py --json
