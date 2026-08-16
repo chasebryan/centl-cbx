@@ -1,0 +1,25 @@
+name: Companion-source character conservation
+
+on:
+  pull_request:
+    paths:
+      - 'research/COMPANION-SOURCE-CHARACTER-CONSERVATION.md'
+      - 'research/verify_companion_source_character_conservation.py'
+      - '.github/workflows/companion-source-character-conservation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_companion_source_character_conservation.py
+      - name: Verify orientation, persistence, and cancellation
+        run: python3 research/verify_companion_source_character_conservation.py --json
