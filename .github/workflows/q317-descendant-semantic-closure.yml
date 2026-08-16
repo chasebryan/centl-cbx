@@ -1,0 +1,25 @@
+name: q317 multiplicity-one descendant semantic closure
+
+on:
+  pull_request:
+    paths:
+      - 'research/Q317-MULTIPLICITY-ONE-DESCENDANT-CLOSURE.md'
+      - 'research/verify_q317_multiplicity_one_descendant_closure.py'
+      - '.github/workflows/q317-descendant-semantic-closure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_q317_multiplicity_one_descendant_closure.py
+      - name: Verify finite descendant closure
+        run: python3 research/verify_q317_multiplicity_one_descendant_closure.py --json
