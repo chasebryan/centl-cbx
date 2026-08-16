@@ -1,0 +1,25 @@
+name: q317 multiplicity-one saturation idempotence
+
+on:
+  pull_request:
+    paths:
+      - 'research/Q317-MULTIPLICITY-ONE-SATURATION-IDEMPOTENCE.md'
+      - 'research/verify_q317_multiplicity_one_saturation_idempotence.py'
+      - '.github/workflows/q317-saturation-idempotence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_q317_multiplicity_one_saturation_idempotence.py
+      - name: Verify complete q317 multiplicity-one closure
+        run: python3 research/verify_q317_multiplicity_one_saturation_idempotence.py --json
