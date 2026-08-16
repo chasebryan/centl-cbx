@@ -1,0 +1,25 @@
+name: D-selector two-source saturation barrier
+
+on:
+  pull_request:
+    paths:
+      - 'research/D-SELECTOR-TWO-SOURCE-SATURATION-BARRIER.md'
+      - 'research/verify_d_selector_two_source_saturation_barrier.py'
+      - '.github/workflows/d-selector-two-source-saturation-barrier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_d_selector_two_source_saturation_barrier.py
+      - name: Verify complete synchronized two-source barrier
+        run: python3 research/verify_d_selector_two_source_saturation_barrier.py --json
