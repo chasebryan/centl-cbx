@@ -1,0 +1,25 @@
+name: q317 square-lift character breakout
+
+on:
+  pull_request:
+    paths:
+      - 'research/Q317-SQUARE-LIFT-CHARACTER-BREAKOUT.md'
+      - 'research/verify_q317_square_lift_character_breakout.py'
+      - '.github/workflows/q317-square-lift-character-breakout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_q317_square_lift_character_breakout.py
+      - name: Verify q317 square-lift breakout
+        run: python3 research/verify_q317_square_lift_character_breakout.py --json
