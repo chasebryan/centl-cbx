@@ -1,0 +1,25 @@
+name: k195 double-square phase selector
+
+on:
+  pull_request:
+    paths:
+      - 'research/K195-DOUBLE-SQUARE-PHASE-SELECTOR.md'
+      - 'research/verify_k195_double_square_phase_selector.py'
+      - '.github/workflows/k195-double-square-phase-selector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k195_double_square_phase_selector.py
+      - name: Verify k195 double-square selector
+        run: python3 research/verify_k195_double_square_phase_selector.py --json
