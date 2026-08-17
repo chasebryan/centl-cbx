@@ -1,0 +1,75 @@
+name: k11 post-k23 forced factor calendar
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_k11_post_k23_forced_factor_calendar.py'
+      - 'research/K11-POST-K23-FORCED-FACTOR-CALENDAR.md'
+      - '.github/workflows/k11-post-k23-factor-calendar.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_k11_post_k23_forced_factor_calendar.py'
+      - '.github/workflows/k11-post-k23-factor-calendar.yml'
+
+jobs:
+  exact-factor-calendar:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_k11_post_k23_forced_factor_calendar.py
+
+      - name: Verify exact factor calendar
+        run: |
+          python3 research/verify_k11_post_k23_forced_factor_calendar.py \
+            > /tmp/k11-post-k23-factor-calendar.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/k11-post-k23-factor-calendar.json').read_text())
+          assert obj['verified'] is True
+          phases = obj['k11_phase_grammar']
+          assert phases['pure_QR_T_mod_11'] == [1,2,3,5,8]
+          assert phases['combined_miss_T_mod_11'] == [1,2,3,5,7,8,9]
+
+          cal = {row['T_mod_11']: row for row in obj['factor11_calendar']}
+          assert {t: cal[t]['first_positive_j_with_11_dividing_companion'] for t in cal} == {
+              1:5, 2:10, 3:4, 5:3, 7:2, 8:7, 9:1
+          }
+          assert max(row['shift_k'] for row in cal.values()) == 63
+
+          hard = {row['p_mod_840']: row for row in obj['hard_class_factor5_7_calendar']}
+          assert (hard[1]['j5'], hard[1]['j7']) == (4,1)
+          assert (hard[121]['j5'], hard[121]['j7']) == (4,6)
+          assert (hard[169]['j5'], hard[169]['j7']) == (2,1)
+          assert (hard[289]['j5'], hard[289]['j7']) == (2,6)
+          assert (hard[361]['j5'], hard[361]['j7']) == (4,2)
+          assert (hard[529]['j5'], hard[529]['j7']) == (2,2)
+
+          rows = obj['hard_phase_rows']
+          assert all(row['T_mod_11'] in (1,2,3,5,8) for row in rows if row['p_mod_840'] in (169,289,529))
+          assert all(row['T_mod_11'] in (1,2,3,5,7,8,9) for row in rows if row['p_mod_840'] in (1,121,361))
+
+          multi = obj['multi_prime_injections']
+          assert any(row['p_mod_840']==1 and row['T_mod_11']==9 and row['j']==1 and row['forced_primes']==[7,11] for row in multi)
+          assert any(row['p_mod_840']==361 and row['T_mod_11']==7 and row['j']==2 and row['forced_primes']==[7,11] for row in multi)
+          assert all(any(e['j']==2 and e['forced_primes'][:2]==[5,7] for e in row['injections_through_j10']) for row in rows if row['p_mod_840']==529)
+          PY
+
+      - name: Preserve exact calendar
+        uses: actions/upload-artifact@v4
+        with:
+          name: k11-post-k23-forced-factor-calendar
+          path: /tmp/k11-post-k23-factor-calendar.json
+          if-no-files-found: error
+          retention-days: 30
