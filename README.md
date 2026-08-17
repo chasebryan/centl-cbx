@@ -1,6 +1,6 @@
 # CENTL-CBX
 
-**CENTL-CBX is the focused proving ground for exact Erdős–Straus research, CBX kernel development, signed-box geometry, survivor-state grammars, and certificate discovery.**
+**CENTL-CBX is the focused proving ground for exact Erdős–Straus research, CBX kernel development, signed-box geometry, survivor-state grammars, recursive entanglement telemetry, and certificate discovery.**
 
 This repository was split from the broader `chasebryan/centl` research tree so CBX can evolve without carrying the full historical CENTL application surface.
 
@@ -23,31 +23,51 @@ with lanes evaluated independently for research telemetry:
 - **N** — independent non-López research lane
 - **L** — López A/B boundary diagnostics
 
-No directional annotation, scheduler, heuristic, BEC/BREC label, or statistical score is permitted to create proof authority. Exact arithmetic state remains the only source of pruning and certificate validity.
+No directional annotation, scheduler, heuristic, BEC/BREC label, motif frequency, or statistical score is permitted to create proof authority. Exact arithmetic state remains the only source of pruning and certificate validity.
 
-## Bryan Entanglement Cross
+## Bryan recursive entanglement layer
 
-The Bryan Entanglement Cross is being integrated as an **observational and scheduling grammar over exact state**:
+The Bryan Entanglement Cross is the primitive observational grammar over exact state:
 
 - `-> (+)` constructive forward pressure
 - `<- (-)` obstructive backward pressure
 - `up (+/-)` expansion that may expose later obstruction
 - `down (-/+)` excavation/restriction that may resolve into construction
 
-It annotates what a proved transition is doing. It does not decide whether the transition is true.
+The Bryan Entanglement Compass is the finite eight-ray composite projection. The **Bryan Recursive Entanglement Calculus (BREC)** is the unbounded binary history language behind both.
+
+CBX now has an exact Lane-I BREC profiler:
+
+```sh
+make -C kernel cbx-brec-i
+kernel/cbx-brec-i --self-test
+kernel/cbx-brec-i --hi 1000000 --i-max 400 --order 4
+```
+
+For each defined shift it records
+
+```text
++  <=>  delta_k((p+k)/4) = 0
+-  <=>  exact signed-box miss
+?  <=>  undefined application stage
+```
+
+and streams every observed recursive motif through the selected order instead of collapsing a prime to one of eight directions. Default order 4 is already strictly larger than the eight-ray projection.
+
+The application contract and optimization notes are in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md). BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
 
 ## Repository layout
 
 ```text
-kernel/       executable CBX research kernel and analyzers
+kernel/       executable CBX research kernel, BREC engine, and analyzers
 research/     exact theorem modules, verifiers, state grammars, frontier notes
 docs/         architecture, migration, and machine contracts
-.github/      CI for theorem/verifier modules
+.github/      CI for kernel and theorem/verifier modules
 ```
 
 ## Current research direction
 
-The active program is converting the realized h169 survivor laboratory from a loose product of residue/mode coordinates into an exact dependency grammar. Recent work includes:
+The active program is converting the realized h169 survivor laboratory from a loose product of residue/mode coordinates into an exact dependency grammar while exposing both obstructive and constructive recursive histories. Current work includes:
 
 - full Type-II geometry made primary over López boundary telemetry;
 - exact k27 survivor grammar and factor-mode selectors;
@@ -57,7 +77,8 @@ The active program is converting the realized h169 survivor laboratory from a lo
 - ten-reservoir odd-support separation through k55;
 - later-phase feedback into earlier survivor modes;
 - executable theorem-state propagation;
-- Bryan Entanglement Cross annotations kept strictly outside proof semantics.
+- BREC Lane-I recursive motif telemetry beyond the finite Cross/Compass projections;
+- optimized small-prime stripping and one-pass dual-target signed-box evaluation under reference-equivalence self-test.
 
 ## Provenance
 
