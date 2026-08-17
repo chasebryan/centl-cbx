@@ -1,0 +1,67 @@
+name: QR support reservoir saturation
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_qr_support_reservoir_saturation.py'
+      - 'research/QR-SUPPORT-RESERVOIR-SATURATION.md'
+      - '.github/workflows/qr-support-reservoir.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_qr_support_reservoir_saturation.py'
+      - '.github/workflows/qr-support-reservoir.yml'
+
+jobs:
+  exact-qr-reservoir:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifier
+        run: python3 -m py_compile research/verify_qr_support_reservoir_saturation.py
+
+      - name: Verify reservoir applications
+        run: |
+          python3 research/verify_qr_support_reservoir_saturation.py \
+            > /tmp/qr-support-reservoir.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/qr-support-reservoir.json').read_text())
+          assert obj['verified'] is True
+          apps = {row['name']: row for row in obj['applications']}
+
+          assert apps['h121-k19-forced-5x7']['q'] == 19
+          assert apps['h121-k19-forced-5x7']['support_size'] == 9
+          assert apps['h121-k19-forced-5x7']['all_NR_representatives_fill_U'] is True
+
+          assert apps['k11-v3-at-least-2']['q'] == 11
+          assert apps['k11-v3-at-least-2']['support_size'] == 5
+          assert apps['k11-v3-at-least-2']['all_NR_representatives_fill_U'] is True
+
+          assert apps['h1-h361-k19-v5-at-least-4']['q'] == 19
+          assert apps['h1-h361-k19-v5-at-least-4']['support_size'] == 9
+          assert apps['h1-h361-k19-v5-at-least-4']['all_NR_representatives_fill_U'] is True
+
+          thresholds = {(row['q'], row['generator_residue']): row for row in obj['generator_thresholds']}
+          assert thresholds[(11, 3)]['valuation_threshold'] == 2
+          assert thresholds[(19, 5)]['valuation_threshold'] == 4
+          assert obj['h1_h361_k19']['equivalent_p_congruence_mod_625'] == 606
+          PY
+
+      - name: Preserve exact reservoir table
+        uses: actions/upload-artifact@v4
+        with:
+          name: qr-support-reservoir-saturation
+          path: /tmp/qr-support-reservoir.json
+          if-no-files-found: error
+          retention-days: 30
