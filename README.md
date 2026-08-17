@@ -67,19 +67,54 @@ python3 kernel/analyze_brec.py \
 
 It reports exact finite motif occupancy, next-sign continuation counts, anchored prefix cylinders, negative-run escape rates, re-entrant histories, deepest first construction, longest obstruction runs, reversal extrema, and spectrum-conditioned summaries.
 
-For the current `k=23` continuation target, compare the exact two children of the anchored `-----` cylinder:
+For the `k=23` continuation target, exact analyzers compare the two children of an anchored cylinder and reconstruct the fixed target through increasing earlier obstruction ancestry:
 
 ```sh
 python3 kernel/analyze_brec_cylinder.py \
   brec-histories.tsv \
   --prefix='-----'
+
+python3 kernel/analyze_brec_target.py \
+  brec-histories.tsv \
+  --target-k 23 \
+  --max-prefix-depth 5
 ```
 
-The cylinder analyzer reconstructs `C=(p+23)/4`, factors it exactly, rebuilds the full signed-box support modulo 23, identifies Type-I versus Type-II target hits, measures unit-group saturation, and compares residue/factor structure between `-----+` and `------`.
+The cylinder analyzer reconstructs `C=(p+23)/4`, factors it exactly, rebuilds the signed-box support modulo 23, identifies Type-I versus Type-II target hits, measures unit-group saturation, and compares residue/factor structure between `-----+` and `------`.
 
-The theorem-hunting contract for this corridor is documented in [`research/BREC-LANE-I-RECURSIVE-CORRIDOR.md`](research/BREC-LANE-I-RECURSIVE-CORRIDOR.md). The application/optimization derivations live in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md).
+### Important falsification
 
-The GitHub Actions **BREC recursive engine** workflow can also be launched manually with a chosen `hi`, `i_max`, recursion `order`, and segment size. Pull requests currently exercise the exact corridor through `p <= 2,000,000`, `k <= 80`, with recursion order 8. The workflow runs both engines, verifies exact equivalence, analyzes the corpus and `k=23` cylinder, and preserves the finite research outputs as an artifact.
+The initial exact `p <= 2,000,000` corpus showed Type-I / Type-II target coincidence at `k=23` after all-negative ancestry. That was an exact finite pattern, **not** a theorem. Larger exact witnesses now falsify the extrapolation at every ancestry depth 1 through 5.
+
+Examples include:
+
+```text
+p =  5,151,841   early history -++-+   k23 Type-I-only
+p =  8,243,281   early history ---++   k23 Type-I-only
+p = 18,766,609   early history -----   k23 Type-I-only
+p = 27,211,969   early history -----   k23 Type-I-only
+```
+
+The surviving exact reduction is sharper: conditional on the known `q=23` Type-II miss normal form, **Type-I-only rescue occurs exactly for the same-class valuation-two thin defects `5^2` and `14^2`.**
+
+The exact guards are:
+
+```sh
+python3 research/verify_k3_brec_obstruction_normal_form.py
+python3 research/verify_k23_typei_companion_patterns.py
+python3 research/verify_k23_brec_ancestry_falsifiers.py
+```
+
+The `k=3` lemma is itself exact: for Mordell-hard primes, the Type-I and Type-II targets coincide modulo 3, and a `k=3` BREC miss occurs iff every prime divisor of `(p+3)/4` is `1 mod 3`.
+
+Research notes:
+
+- [`research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md`](research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md)
+- [`research/K23-BREC-TWO-TARGET-COINCIDENCE.md`](research/K23-BREC-TWO-TARGET-COINCIDENCE.md)
+- [`research/BREC-LANE-I-RECURSIVE-CORRIDOR.md`](research/BREC-LANE-I-RECURSIVE-CORRIDOR.md)
+- [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md)
+
+The GitHub Actions **BREC recursive engine** workflow can be launched manually with a chosen `hi`, `i_max`, recursion `order`, and segment size. Pull requests exercise the exact corridor through `p <= 2,000,000`, `k <= 80`, with recursion order 8. A separate **k23 BREC companion exact checks** workflow freezes the exact q23 companion residue classification together with explicit larger falsifiers, preventing the finite two-million coincidence from being accidentally promoted later.
 
 BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
 
@@ -87,7 +122,7 @@ BREC annotates what exact arithmetic did. It does not decide whether the arithme
 
 ```text
 kernel/       executable CBX research kernel, BREC engine, analyzers, verifiers
-research/     exact theorem modules, verifiers, state grammars, frontier notes
+research/     exact theorem modules, falsifiers, state grammars, frontier notes
 docs/         architecture, migration, and machine contracts
 .github/      CI and parameterized finite research workflows
 ```
@@ -109,6 +144,9 @@ The active program is converting the realized h169 survivor laboratory from a lo
 - exact finite BREC-versus-standalone equivalence verification;
 - optimized small-prime stripping, collapsed `{-1,-p^(-1)}` targets, and one-pass dual-target signed-box evaluation;
 - exact signed-box reconstruction inside the `k=23` obstruction cylinder;
+- exact `k=3` obstruction normal form;
+- exhaustive `q=23` Type-I companion classification across the six Type-II defect states;
+- permanent explicit falsifiers for false BREC ancestry-coincidence extrapolations;
 - parameterized preserved BREC census artifacts for repeatable theorem hunting.
 
 ## Provenance
