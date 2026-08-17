@@ -4,16 +4,21 @@ on:
   pull_request:
     paths:
       - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k19_brec_state_compression.py'
+      - 'research/verify_k19_automaton_equivalence.py'
       - 'research/K19-BREC-CYCLIC-STATE-COMPRESSION.md'
+      - 'research/K19-AUTOMATON-EQUIVALENCE.md'
       - '.github/workflows/k19-brec-state-compression.yml'
   push:
     branches: [main]
     paths:
       - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k19_brec_state_compression.py'
+      - 'research/verify_k19_automaton_equivalence.py'
       - '.github/workflows/k19-brec-state-compression.yml'
 
 jobs:
@@ -26,17 +31,24 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Compile exact verifier
+      - name: Compile exact verifiers
         run: |
           python3 -m py_compile \
             kernel/analyze_brec_cylinder.py \
+            research/classify_signed_box_residue_automaton.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
-            research/verify_k19_brec_state_compression.py
+            research/verify_k19_brec_state_compression.py \
+            research/verify_k19_automaton_equivalence.py
 
       - name: Exhaust cyclic state closure
         run: |
           python3 research/verify_k19_brec_state_compression.py \
             > /tmp/k19-state-compression.json
+
+      - name: Cross-verify independent automata
+        run: |
+          python3 research/verify_k19_automaton_equivalence.py \
+            > /tmp/k19-automaton-equivalence.json
 
       - name: Validate state theorem
         run: |
@@ -45,6 +57,8 @@ jobs:
           from pathlib import Path
 
           obj = json.loads(Path('/tmp/k19-state-compression.json').read_text())
+          eq = json.loads(Path('/tmp/k19-automaton-equivalence.json').read_text())
+
           assert obj['verified'] is True
           assert obj['modulus'] == 19
           assert obj['generator'] == 2
@@ -83,12 +97,23 @@ jobs:
 
           assert len(obj['canonical_miss_states']) == 136
           assert max(len(row['canonical_atoms']) for row in obj['canonical_miss_states']) == 3
+
+          assert eq['verified'] is True
+          assert eq['full_reachable_states'] == 439
+          assert eq['type_II_miss_states'] == 254
+          assert eq['combined_miss_states'] == 136
+          assert eq['type_I_only_states'] == 118
+          assert eq['state_sets_identical'] is True
+          assert eq['minimal_depths_identical'] is True
+          assert eq['combined_miss_identities_identical'] is True
           PY
 
-      - name: Preserve exact state table
+      - name: Preserve exact state tables
         uses: actions/upload-artifact@v4
         with:
           name: k19-brec-cyclic-state-compression
-          path: /tmp/k19-state-compression.json
+          path: |
+            /tmp/k19-state-compression.json
+            /tmp/k19-automaton-equivalence.json
           if-no-files-found: error
           retention-days: 30
