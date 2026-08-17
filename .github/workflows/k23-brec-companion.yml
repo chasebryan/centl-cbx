@@ -5,11 +5,15 @@ on:
     paths:
       - 'kernel/analyze_brec_cylinder.py'
       - 'research/verify_k3_brec_obstruction_normal_form.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
       - 'research/verify_k23_rescue_split_hard_classes.py'
       - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
       - 'research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md'
       - 'research/K23-RESCUE-SPLIT-HARD-CLASS-COMPATIBILITY.md'
@@ -19,6 +23,8 @@ on:
     paths:
       - 'kernel/analyze_brec_cylinder.py'
       - 'research/verify_k3_brec_obstruction_normal_form.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
@@ -40,6 +46,8 @@ jobs:
           python3 -m py_compile \
             kernel/analyze_brec_cylinder.py \
             research/verify_k3_brec_obstruction_normal_form.py \
+            research/verify_k7_brec_obstruction_normal_form.py \
+            research/verify_k11_brec_obstruction_normal_form.py \
             research/verify_k23_typei_companion_patterns.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
             research/verify_k23_typei_only_integer_normal_form.py \
@@ -49,6 +57,16 @@ jobs:
         run: |
           python3 research/verify_k3_brec_obstruction_normal_form.py \
             > /tmp/k3-obstruction-normal-form.json
+
+      - name: Verify exact k7 obstruction normal form
+        run: |
+          python3 research/verify_k7_brec_obstruction_normal_form.py \
+            > /tmp/k7-obstruction-normal-form.json
+
+      - name: Verify exact k11 obstruction normal form
+        run: |
+          python3 research/verify_k11_brec_obstruction_normal_form.py \
+            > /tmp/k11-obstruction-normal-form.json
 
       - name: Verify q23 Type-I companion residue classification
         run: |
@@ -77,6 +95,8 @@ jobs:
           from pathlib import Path
 
           k3 = json.loads(Path('/tmp/k3-obstruction-normal-form.json').read_text())
+          k7 = json.loads(Path('/tmp/k7-obstruction-normal-form.json').read_text())
+          k11 = json.loads(Path('/tmp/k11-obstruction-normal-form.json').read_text())
           patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
           falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
           normal = json.loads(Path('/tmp/k23-integer-normal-form.json').read_text())
@@ -85,6 +105,22 @@ jobs:
           assert k3['verified'] is True
           assert k3['combined_target'] == 2
           assert k3['miss_iff'] == 'every prime divisor q of C3=(p+3)/4 is 1 mod 3'
+
+          assert k7['verified'] is True
+          assert k7['two_target_coincidence'] is True
+          assert k7['QR7'] == [1, 2, 4]
+          assert k7['NR7'] == [3, 5, 6]
+
+          assert k11['verified'] is True
+          assert k11['pure_QR_branch']['combined_miss'] is True
+          k11_states = {(s['a2'], s['a6']): s for s in k11['thin_states']}
+          assert k11_states[(2, 0)]['hit_class'] == 'type-I-only'
+          assert k11_states[(0, 2)]['hit_class'] == 'type-I-only'
+          assert k11_states[(1, 1)]['hit_class'] == 'miss'
+          assert k11['thin_type_I_only_packets'] == [[0, 2], [2, 0]]
+          assert k11['thin_combined_miss_packets'] == [[0, 0], [0, 1], [1, 0], [1, 1]]
+          assert {w['p'] for w in k11['witnesses']} == {8243281, 18766609, 27211969}
+          assert k11['known_nonmiss']['p'] == 5151841
 
           assert patterns['verified'] is True
           assert [p['name'] for p in patterns['type_I_only_patterns']] == ['5^2', '14^2']
