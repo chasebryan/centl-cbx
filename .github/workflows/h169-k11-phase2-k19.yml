@@ -1,0 +1,84 @@
+name: h169 k11 phase2 k19 collapse
+
+on:
+  pull_request:
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/verify_h169_k11_phase2_k19_collapse.py'
+      - 'research/H169-K11-PHASE2-K19-COLLAPSE.md'
+      - '.github/workflows/h169-k11-phase2-k19.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/verify_h169_k11_phase2_k19_collapse.py'
+      - '.github/workflows/h169-k11-phase2-k19.yml'
+
+jobs:
+  exact-cross-coordinate-collapse:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact dependencies
+        run: |
+          python3 -m py_compile \
+            research/propagate_h169_dependency_state.py \
+            research/verify_h169_k11_future_factor_partition.py \
+            research/verify_k19_nr_valuation_budget.py \
+            research/verify_h169_k11_phase2_k19_collapse.py
+
+      - name: Verify horizontal and vertical collapse
+        run: |
+          python3 research/verify_h169_k11_phase2_k19_collapse.py \
+            > /tmp/h169-k11-phase2-k19.json
+
+      - name: Validate exact theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k11-phase2-k19.json').read_text())
+          assert obj['verified'] is True
+          assert obj['phase']['t_mod_11'] == 8
+          assert obj['phase']['T_mod_11'] == 2
+          assert obj['phase']['p_mod_11'] == 3
+          assert obj['phase']['forced_factor'] == 11
+          assert obj['phase']['next_post_k23_reentry_shift'] == 63
+
+          routes = {row['route']: row for row in obj['routes']}
+          assert routes['A']['route_seed'] == 391
+          assert routes['A']['route_seed_factorization'] == '17*23'
+          assert routes['B']['route_seed'] == 1081
+          assert routes['B']['route_seed_factorization'] == '23*47'
+          for row in routes.values():
+              assert row['gcd_route_seed_11'] == 1
+              assert row['forced_consequence'] == '11|R'
+              assert row['11_mod_19'] == 11
+              assert row['bare_compatible'] is False
+              assert row['only_surviving_k19_miss_mode'] == 'FULL_QR'
+
+          v = obj['vertical_resource_theorem']
+          assert v['generic_h169_TypeII_miss_max_Omega_NR'] == 8
+          assert v['phase_seed'] == [11]
+          assert v['phase_TypeII_miss_max_Omega_NR'] == 2
+          assert v['resource_drop'] == 6
+          assert v['positive_NR_edges_inside_seeded_SCCs'] == 0
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-phase2-k19-collapse
+          path: /tmp/h169-k11-phase2-k19.json
+          if-no-files-found: error
+          retention-days: 30
