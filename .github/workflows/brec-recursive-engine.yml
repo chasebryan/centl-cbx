@@ -29,6 +29,7 @@ on:
       - 'kernel/src/cbx_standalone_i.c'
       - 'kernel/src/cbx.c'
       - 'kernel/analyze_brec.py'
+      - 'kernel/analyze_brec_cylinder.py'
       - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - 'kernel/BREC-ES-APPLICATION.md'
@@ -42,6 +43,7 @@ on:
       - 'kernel/src/cbx_standalone_i.c'
       - 'kernel/src/cbx.c'
       - 'kernel/analyze_brec.py'
+      - 'kernel/analyze_brec_cylinder.py'
       - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - '.github/workflows/brec-recursive-engine.yml'
@@ -82,8 +84,10 @@ jobs:
       - name: Reference-equivalence self-test
         run: kernel/cbx-brec-i --self-test
 
-      - name: Analyzer self-test
-        run: python3 kernel/analyze_brec.py --self-test
+      - name: Analyzer self-tests
+        run: |
+          python3 kernel/analyze_brec.py --self-test
+          python3 kernel/analyze_brec_cylinder.py --self-test
 
       - name: Finite reference census
         run: |
@@ -122,6 +126,15 @@ jobs:
             --json \
             > /tmp/brec-analysis.json
 
+      - name: Analyze k23 obstruction cylinder
+        if: ${{ fromJSON(env.BREC_I_MAX) >= 23 }}
+        run: |
+          python3 kernel/analyze_brec_cylinder.py \
+            /tmp/brec-histories.tsv \
+            --prefix='-----' \
+            --json \
+            > /tmp/brec-k23-cylinder.json
+
       - name: Validate recursive accounting
         run: |
           python3 - <<'PY'
@@ -159,6 +172,14 @@ jobs:
           if cylinders['max_depth'] >= 6:
               split = next(x for x in cylinders['all_negative_splits'] if x['parent'] == '-----')
               assert split['next_k'] == 23
+          if obj['i_max'] >= 23:
+              cyl = json.loads(Path('/tmp/brec-k23-cylinder.json').read_text())
+              assert cyl['mode'] == 'analyze-brec-cylinder'
+              assert cyl['prefix'] == '-----'
+              assert cyl['next_k'] == 23
+              assert cyl['binary_children'] == (
+                  cyl['constructive_child']['count'] + cyl['obstructive_child']['count']
+              )
 
           lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
           assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
@@ -195,6 +216,9 @@ jobs:
           cp /tmp/brec-histories.tsv /tmp/brec-artifacts/
           cp /tmp/brec-equivalence.json /tmp/brec-artifacts/
           cp /tmp/brec-analysis.json /tmp/brec-artifacts/
+          if [ -f /tmp/brec-k23-cylinder.json ]; then
+            cp /tmp/brec-k23-cylinder.json /tmp/brec-artifacts/
+          fi
 
       - name: Preserve finite BREC census
         uses: actions/upload-artifact@v4
