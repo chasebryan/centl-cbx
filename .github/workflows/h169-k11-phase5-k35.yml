@@ -1,0 +1,74 @@
+name: h169 k11 phase5 k35 branch collapse
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k35_two_branch_survivor_theorem.py'
+      - 'research/verify_h169_k11_phase5_k35_branch_collapse.py'
+      - 'research/H169-K11-PHASE5-K35-BRANCH-COLLAPSE.md'
+      - '.github/workflows/h169-k11-phase5-k35.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_phase5_k35_branch_collapse.py'
+      - '.github/workflows/h169-k11-phase5-k35.yml'
+
+jobs:
+  exact-branch-collapse:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifier
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_k35_two_branch_survivor_theorem.py \
+            research/verify_h169_k11_phase5_k35_branch_collapse.py
+
+      - name: Verify phase-conditioned branch collapse
+        run: |
+          python3 research/verify_h169_k11_phase5_k35_branch_collapse.py \
+            > /tmp/h169-k11-phase5-k35.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k11-phase5-k35.json').read_text())
+          assert obj['verified'] is True
+          assert obj['phase']['p_mod_840'] == 169
+          assert obj['phase']['T_mod_11'] == 5
+          assert obj['phase']['equivalent_t_mod_11'] == 4
+          assert obj['phase']['forced_prime'] == 11
+          assert obj['phase']['forced_prime_mod_7'] == 4
+          assert obj['phase']['forced_prime_in_H35'] is True
+
+          rows = {row['p']: row for row in obj['regressions']}
+          assert rows[3529]['J35'] is True
+          assert rows[3529]['S7'] is False
+          assert rows[3529]['k35']['miss'] is True
+          assert rows[31249]['J35'] is True
+          assert rows[31249]['S7'] is False
+          assert rows[31249]['k35']['miss'] is True
+          assert rows[179089]['J35'] is False
+          assert rows[179089]['S7'] is False
+          assert rows[179089]['k35']['miss'] is False
+          PY
+
+      - name: Preserve proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-phase5-k35-branch-collapse
+          path: /tmp/h169-k11-phase5-k35.json
+          if-no-files-found: error
+          retention-days: 30
