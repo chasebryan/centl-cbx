@@ -9,12 +9,15 @@ on:
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
       - 'research/verify_k23_predecessor_corridor_normal_forms.py'
+      - 'research/verify_k23_predecessor_pairwise_coprime.py'
       - 'research/K23-PREDECESSOR-CORRIDOR-NORMAL-FORMS.md'
+      - 'research/K23-PREDECESSOR-CORE-PAIRWISE-COPRIME.md'
       - '.github/workflows/k23-predecessor-corridor.yml'
   push:
     branches: [main]
     paths:
       - 'research/verify_k23_predecessor_corridor_normal_forms.py'
+      - 'research/verify_k23_predecessor_pairwise_coprime.py'
       - '.github/workflows/k23-predecessor-corridor.yml'
 
 jobs:
@@ -27,7 +30,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Compile exact corridor verifier
+      - name: Compile exact corridor verifiers
         run: |
           python3 -m py_compile \
             kernel/analyze_brec_cylinder.py \
@@ -35,12 +38,18 @@ jobs:
             research/verify_k19_brec_state_compression.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
             research/verify_k23_typei_only_integer_normal_form.py \
-            research/verify_k23_predecessor_corridor_normal_forms.py
+            research/verify_k23_predecessor_corridor_normal_forms.py \
+            research/verify_k23_predecessor_pairwise_coprime.py
 
       - name: Verify five-coordinate predecessor synthesis
         run: |
           python3 research/verify_k23_predecessor_corridor_normal_forms.py \
             > /tmp/k23-predecessor-corridor.json
+
+      - name: Verify pairwise-coprime predecessor core
+        run: |
+          python3 research/verify_k23_predecessor_pairwise_coprime.py \
+            > /tmp/k23-predecessor-pairwise-coprime.json
 
       - name: Validate exact synthesis
         run: |
@@ -49,6 +58,8 @@ jobs:
           from pathlib import Path
 
           obj = json.loads(Path('/tmp/k23-predecessor-corridor.json').read_text())
+          coprime = json.loads(Path('/tmp/k23-predecessor-pairwise-coprime.json').read_text())
+
           assert obj['verified'] is True
           assert obj['mode'] == 'k23-predecessor-corridor-normal-forms'
           assert obj['parameter'] == 'T=(p+23)/24'
@@ -72,12 +83,21 @@ jobs:
           assert all(rows[27211969]['normal_form_misses'].values())
           assert rows[18766609]['k19_state']['combined_miss'] is True
           assert rows[27211969]['k19_state']['combined_miss'] is True
+
+          assert coprime['verified'] is True
+          assert coprime['pair_count'] == 10
+          assert coprime['forms'] == [
+              'A=6T-5', 'B=3T-2', 'C=2T-1', 'D=3T-1', 'E=6T-1'
+          ]
+          assert all(row['gcd'] == 1 for row in coprime['pairs'])
           PY
 
-      - name: Preserve synthesis proof object
+      - name: Preserve synthesis proof objects
         uses: actions/upload-artifact@v4
         with:
           name: k23-predecessor-corridor-normal-forms
-          path: /tmp/k23-predecessor-corridor.json
+          path: |
+            /tmp/k23-predecessor-corridor.json
+            /tmp/k23-predecessor-pairwise-coprime.json
           if-no-files-found: error
           retention-days: 30
