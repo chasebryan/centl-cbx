@@ -185,9 +185,23 @@ exact arithmetic
                 -> telemetry / visualization / scheduler research
 ```
 
-No graphical direction, recursive word, motif frequency, or absent finite motif grants pruning permission or establishes a theorem.
+No graphical direction, recursive word, motif frequency, absent finite motif, finite target coincidence, or finite cylinder collapse grants pruning permission or establishes a theorem.
 
 An optimization that uses BREC evidence must still preserve exact search semantics independently.
+
+A proposed arithmetic pruning rule derived from BREC must pass the stricter route:
+
+```text
+finite observation
+    -> explicit candidate statement
+        -> adversarial larger-scale search
+            -> preserve every falsifier
+                -> exact proof
+                    -> independent verifier
+                        -> pruning authority
+```
+
+A finite candidate that fails later is not to be hidden or silently removed. Its falsifier becomes part of the regression corpus. The `k=23` ancestry-coincidence episode is the canonical example: the two-million-prime pattern was real, but larger exact primes falsified its universal extrapolation.
 
 ---
 
@@ -220,3 +234,5 @@ The Compass expresses selected finite compositions.
 BREC preserves the recursive ancestry beyond those eight visible rays.
 
 That distinction matters computationally: a prime can survive several obstructive exact states, reverse into a construction, re-enter obstruction, and later construct again. Flattening such a path to one label destroys information. BREC lets CBX retain the path while keeping the arithmetic itself sovereign.
+
+The same principle applies to research failure. A false finite pattern can itself have a recursive history: observed contraction, later re-entry, explicit falsifier. CBX preserves that history too, so the machine learns where a tempting simplification stops being exact without ever converting the failed heuristic into proof authority.
