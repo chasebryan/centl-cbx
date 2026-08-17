@@ -18,7 +18,7 @@ This script exhausts those six states exactly in (Z/23Z)^x and classifies the
 Type-II target -1 and the Type-I target -p^-1, using p == 4C (mod 23).
 
 It proves only this finite residue-pattern lemma conditional on the q=23
-Type-II normal form.  It does not prove that earlier BREC obstruction ancestry
+Type-II normal form. It does not prove that earlier BREC obstruction ancestry
 excludes any of the patterns.
 """
 
@@ -129,12 +129,12 @@ def verify() -> dict[str, Any]:
         if state["hit_type_II"]:
             raise SystemExit(f"q23 pattern {key}: expected Type-II miss normal form")
 
-    one_sided = [
+    one_sided = sorted(
         (state["a5"], state["a14"])
         for state in states
         if state["hit_class"] == "type-I-only"
-    ]
-    if one_sided != [(2, 0), (0, 2)]:
+    )
+    if one_sided != [(0, 2), (2, 0)]:
         raise SystemExit(f"unexpected one-sided pattern set: {one_sided}")
 
     return {
