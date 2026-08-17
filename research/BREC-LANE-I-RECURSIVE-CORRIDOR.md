@@ -58,7 +58,43 @@ records that the prime missed the first four exact shifts, constructed at the fi
 
 This matters because the current proof program is already about interacting fixed-shift constraints. BREC gives those simultaneous constraints an explicit history address.
 
-## 3. Prefix cylinders
+## 3. Two statistics that must not be confused
+
+CBX now records two different recursive views.
+
+### Sliding motifs
+
+A motif such as
+
+```text
+--+
+```
+
+is counted whenever that contiguous three-sign pattern occurs **anywhere** inside a prime's Lane-I history.
+
+These are useful for studying local transition/re-entry behavior, but they are not tied to a particular absolute shift.
+
+### Anchored prefix cylinders
+
+A prefix such as
+
+```text
+--+
+```
+
+in the prefix-cylinder table means specifically
+
+```text
+k=3   miss
+k=7   miss
+k=11  construct
+```
+
+because prefixes are anchored at the start of the corridor.
+
+The immediate `k=23` proof program requires **anchored prefix cylinders**, not sliding motif counts. `analyze_brec.py` reports both structures separately so a local pattern at later shifts cannot be mistaken for an early-corridor population.
+
+## 4. Prefix cylinders
 
 For a binary word
 
@@ -66,15 +102,17 @@ For a binary word
 w in {+,-}^d,
 ```
 
-define the finite prefix cylinder
+define the finite anchored prefix cylinder
 
 ```text
-C_X(w) = { p <= X : p is Mordell-hard and the first d defined Lane-I signs equal w }.
+C_X(w) = { p <= X : p is Mordell-hard and W_K(p) begins with w }.
 ```
+
+If a `?` occurs inside the requested prefix, that prime is excluded from the binary cylinder at that depth and counted separately as an undefined-prefix exclusion.
 
 When `p > K`, all shifts `k <= K` are automatically coprime to prime `p`, so the corridor contains no `?` positions and the prefix is literally binary.
 
-The cylinders at fixed depth partition the relevant finite hard-prime corpus:
+The binary cylinders at fixed depth partition the eligible finite hard-prime corpus:
 
 ```text
 C_X(w),  |w| = d.
@@ -82,7 +120,7 @@ C_X(w),  |w| = d.
 
 They are empirical finite sets. Their occupancy or emptiness is not automatically universal.
 
-## 4. The all-negative cylinder
+## 5. The all-negative cylinder
 
 The central obstruction cylinder is
 
@@ -122,9 +160,9 @@ inside the recursive corridor.
 
 The mathematical target is not merely to observe that one child is small. The target is to explain the split by exact arithmetic constraints inherited from the parent cylinder.
 
-## 5. Conditional child counts
+## 6. Conditional child counts
 
-For a prefix `w`, define finite child counts
+For an anchored prefix `w`, define finite child counts
 
 ```text
 N_X(w+) = |C_X(w+)|,
@@ -137,13 +175,13 @@ When their sum is nonzero, the finite constructive continuation rate is
 rho_X(w) = N_X(w+) / (N_X(w+) + N_X(w-)).
 ```
 
-`analyze_brec.py` computes these counts for every observed prefix supported by the selected motif order.
+`analyze_brec.py` computes these anchored child counts from the per-prime history ledger. It separately computes sliding motif continuation rates from the motif summary.
 
 The rate is a search heuristic only. A value near `1` suggests that the obstructive child `w-` may have a rigid exceptional grammar worth classifying. A value of exactly `1` in a finite census is still not a theorem.
 
-## 6. Negative-run escape
+## 7. Negative-run escape
 
-For the pure obstructive prefix
+For the pure anchored obstructive prefix
 
 ```text
 w_r = -^r,
@@ -155,7 +193,7 @@ define the finite escape rate
 eta_X(r) = N_X(-^r +) / (N_X(-^r +) + N_X(-^(r+1))).
 ```
 
-This is a direct numerical probe of how often `r` consecutive exact failures resolve at the next shift.
+This is a direct numerical probe of how often `r` initial exact failures resolve at the next shift.
 
 The corresponding theorem-hunting question is sharper:
 
@@ -163,9 +201,9 @@ The corresponding theorem-hunting question is sharper:
 
 That is the direction in which BREC becomes useful to the proof program rather than merely descriptive.
 
-## 7. Re-entry
+## 8. Re-entry
 
-BREC automatically exposes the depth-three re-entrant words
+BREC automatically exposes the depth-three re-entrant sliding words
 
 ```text
 +-+
@@ -183,11 +221,11 @@ For Lane I these mean:
 
 Their presence proves only that local exact success/failure is not monotone in the shift axis for the observed corpus. Their arithmetic classification may reveal which factor changes destroy or restore signed-box occupancy.
 
-## 8. Spectrum conditioning
+## 9. Spectrum conditioning
 
-Every motif count is also recorded by the existing A/B/C hard-prime spectrum.
+Every sliding motif and every anchored prefix cylinder is conditioned by the existing A/B/C hard-prime spectrum.
 
-For a word `w`, CBX records
+For a word `w`, CBX can therefore compare
 
 ```text
 N_A(w), N_B(w), N_C(w).
@@ -195,18 +233,18 @@ N_A(w), N_B(w), N_C(w).
 
 This allows two separate questions:
 
-1. Is a motif globally rare because one spectrum suppresses it?
+1. Is a history globally rare because one spectrum suppresses it?
 2. Does the same recursive prefix split differently across spectra?
 
 A spectrum-local disappearance is more useful than a global percentage when it can be translated into an exact residue or character obstruction.
 
-## 9. From corpus signal to theorem target
+## 10. From corpus signal to theorem target
 
 The preferred workflow is:
 
 ```text
 1. census exact histories
-2. find a low-entropy parent prefix
+2. find a low-entropy anchored parent prefix
 3. compare its + and - children
 4. recover the arithmetic state of both child populations
 5. identify a candidate invariant
@@ -217,7 +255,7 @@ The preferred workflow is:
 
 This is intentionally stricter than training a scheduler directly from the finite frequencies.
 
-## 10. Immediate corridor target
+## 11. Immediate corridor target
 
 The current exact-ES frontier already singles out the continuation around `k=23`.
 
@@ -240,7 +278,7 @@ If the negative child collapses to a small exact grammar, that grammar becomes a
 
 If it does not collapse, the result is still useful: it falsifies the idea that the first five failures alone force a low-complexity `k=23` obstruction.
 
-## 11. Implementation
+## 12. Implementation
 
 Generate a corpus:
 
@@ -253,12 +291,13 @@ kernel/cbx-brec-i \
   > brec-summary.json
 ```
 
-Analyze it:
+Analyze it with anchored cylinders through `k=23`:
 
 ```sh
 python3 kernel/analyze_brec.py \
   brec-summary.json \
   --histories brec-histories.tsv \
+  --prefix-depth 6 \
   --json > brec-analysis.json
 ```
 
@@ -272,7 +311,7 @@ python3 kernel/verify_brec_i.py \
 
 The GitHub Actions `BREC recursive engine` workflow performs this exact reference check and preserves the resulting finite corpus as an artifact.
 
-## 12. Claim boundary
+## 13. Claim boundary
 
 A BREC word is an exact record of a finite sequence of arithmetic outcomes.
 
