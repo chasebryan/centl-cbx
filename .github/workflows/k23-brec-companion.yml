@@ -4,14 +4,17 @@ on:
   pull_request:
     paths:
       - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
       - '.github/workflows/k23-brec-companion.yml'
   push:
     branches: [main]
     paths:
       - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - '.github/workflows/k23-brec-companion.yml'
@@ -30,8 +33,14 @@ jobs:
         run: |
           python3 -m py_compile \
             kernel/analyze_brec_cylinder.py \
+            research/verify_k3_brec_obstruction_normal_form.py \
             research/verify_k23_typei_companion_patterns.py \
             research/verify_k23_brec_ancestry_falsifiers.py
+
+      - name: Verify exact k3 obstruction normal form
+        run: |
+          python3 research/verify_k3_brec_obstruction_normal_form.py \
+            > /tmp/k3-obstruction-normal-form.json
 
       - name: Verify q23 Type-I companion residue classification
         run: |
@@ -49,8 +58,13 @@ jobs:
           import json
           from pathlib import Path
 
+          k3 = json.loads(Path('/tmp/k3-obstruction-normal-form.json').read_text())
           patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
           falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
+
+          assert k3['verified'] is True
+          assert k3['combined_target'] == 2
+          assert k3['miss_iff'] == 'every prime divisor q of C3=(p+3)/4 is 1 mod 3'
 
           assert patterns['verified'] is True
           assert [p['name'] for p in patterns['type_I_only_patterns']] == ['5^2', '14^2']
