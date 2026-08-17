@@ -2,13 +2,14 @@
 """Analyze exact finite CBX/BREC Lane-I histories.
 
 The input is the JSON summary emitted by cbx-brec-i and, optionally, the TSV
-history ledger emitted by --histories.  The analyzer exposes finite structural
+history ledger emitted by --histories. The analyzer exposes finite structural
 signals that can guide theorem hunting without turning statistics into proof.
 
 Key outputs:
-  * every absent/present binary motif through the recorded order;
-  * exact conditional next-sign counts for each observed prefix;
-  * negative-run escape rates, e.g. P(+ next | --- suffix) in the finite corpus;
+  * every absent/present contiguous binary motif through the recorded order;
+  * exact conditional next-sign counts for each observed motif prefix;
+  * negative-run escape rates for contiguous obstructive motifs;
+  * exact start-of-corridor prefix cylinders from the per-prime history ledger;
   * re-entrant motif counts (+-+ and -+-);
   * deepest first constructive shift and longest obstructive runs per prime;
   * spectrum-conditioned finite history summaries.
@@ -19,8 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from collections import Counter, defaultdict
-from pathlib import Path
+from collections import defaultdict
 from typing import Any, Iterable
 
 
@@ -41,7 +41,10 @@ def require_int(obj: dict[str, Any], key: str, where: str) -> int:
 
 def all_words(depth: int) -> Iterable[str]:
     for code in range(1 << depth):
-        yield "".join("-" if (code >> (depth - 1 - i)) & 1 else "+" for i in range(depth))
+        yield "".join(
+            "-" if (code >> (depth - 1 - i)) & 1 else "+"
+            for i in range(depth)
+        )
 
 
 def motif_index(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -59,7 +62,9 @@ def motif_index(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
             raise SystemExit(f"BREC summary: duplicate motif {word!r}")
         count = require_int(row, "count", f"motif {word}")
         if count <= 0:
-            raise SystemExit(f"BREC summary: emitted motif {word!r} must have positive count")
+            raise SystemExit(
+                f"BREC summary: emitted motif {word!r} must have positive count"
+            )
         out[word] = row
     return out
 
@@ -153,15 +158,19 @@ def analyze_motifs(summary: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(cross, dict):
         raise SystemExit("BREC summary: cross must be an object")
     cross_check = {
-        "right_plus_matches": require_int(cross, "right_plus", "cross") == count_of(motifs, "+"),
-        "left_minus_matches": require_int(cross, "left_minus", "cross") == count_of(motifs, "-"),
+        "right_plus_matches": require_int(cross, "right_plus", "cross")
+        == count_of(motifs, "+"),
+        "left_minus_matches": require_int(cross, "left_minus", "cross")
+        == count_of(motifs, "-"),
         "up_plus_minus_matches": (
             order < 2
-            or require_int(cross, "up_plus_minus", "cross") == count_of(motifs, "+-")
+            or require_int(cross, "up_plus_minus", "cross")
+            == count_of(motifs, "+-")
         ),
         "down_minus_plus_matches": (
             order < 2
-            or require_int(cross, "down_minus_plus", "cross") == count_of(motifs, "-+")
+            or require_int(cross, "down_minus_plus", "cross")
+            == count_of(motifs, "-+")
         ),
     }
     if not all(cross_check.values()):
@@ -178,6 +187,11 @@ def analyze_motifs(summary: dict[str, Any]) -> dict[str, Any]:
         "negative_run_escape": negative_run_escape,
         "reentrant": reentrant,
         "cross_check": cross_check,
+        "interpretation": (
+            "These motif counts are contiguous-window statistics anywhere in a Lane-I "
+            "history. Use histories.prefix_cylinders for exact start-of-corridor "
+            "prefix populations."
+        ),
     }
 
 
@@ -250,7 +264,9 @@ def load_histories(path: str) -> list[dict[str, Any]]:
                 "history": history,
             }
             if len(history) != row["stages"]:
-                raise SystemExit(f"{path}: stage/history length mismatch for p={row['p']}")
+                raise SystemExit(
+                    f"{path}: stage/history length mismatch for p={row['p']}"
+                )
             if history.count("+") != row["positive"]:
                 raise SystemExit(f"{path}: positive count mismatch for p={row['p']}")
             if history.count("-") != row["negative"]:
@@ -284,7 +300,88 @@ def mean(values: list[int]) -> float | None:
     return None if not values else sum(values) / len(values)
 
 
-def analyze_history_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def analyze_prefix_cylinders(
+    rows: list[dict[str, Any]], max_depth: int
+) -> dict[str, Any]:
+    if max_depth < 1:
+        return {"max_depth": 0, "depths": {}}
+
+    depths: dict[str, Any] = {}
+    for depth in range(1, max_depth + 1):
+        counts: dict[str, int] = defaultdict(int)
+        spectrum_counts: dict[str, dict[str, int]] = defaultdict(
+            lambda: {"A": 0, "B": 0, "C": 0, "?": 0}
+        )
+        excluded_undefined = 0
+
+        for row in rows:
+            history = str(row["history"])
+            if len(history) < depth:
+                continue
+            prefix = history[:depth]
+            if "?" in prefix:
+                excluded_undefined += 1
+                continue
+            counts[prefix] += 1
+            spectrum = str(row["spectrum"])
+            spectrum_counts[prefix][
+                spectrum if spectrum in {"A", "B", "C"} else "?"
+            ] += 1
+
+        entries = [
+            {
+                "prefix": prefix,
+                "count": counts[prefix],
+                "spectrum": spectrum_counts[prefix],
+            }
+            for prefix in sorted(counts)
+        ]
+        absent = [word for word in all_words(depth) if word not in counts]
+        depths[str(depth)] = {
+            "eligible_primes": sum(counts.values()),
+            "excluded_undefined_prefix": excluded_undefined,
+            "present": len(entries),
+            "absent": absent,
+            "cylinders": entries,
+        }
+
+    all_negative_splits: list[dict[str, Any]] = []
+    for depth in range(1, max_depth):
+        parent = "-" * depth
+        child_plus = parent + "+"
+        child_minus = parent + "-"
+        next_depth = depths[str(depth + 1)]
+        lookup = {row["prefix"]: row["count"] for row in next_depth["cylinders"]}
+        plus = lookup.get(child_plus, 0)
+        minus = lookup.get(child_minus, 0)
+        total = plus + minus
+        all_negative_splits.append(
+            {
+                "parent": parent,
+                "next_k": 3 + 4 * depth,
+                "constructive_child": child_plus,
+                "obstructive_child": child_minus,
+                "constructive_count": plus,
+                "obstructive_count": minus,
+                "children": total,
+                "constructive_rate": None if total == 0 else plus / total,
+            }
+        )
+
+    return {
+        "max_depth": max_depth,
+        "depths": depths,
+        "all_negative_splits": all_negative_splits,
+        "note": (
+            "Prefix cylinders are anchored at k=3. Unlike motif continuation, "
+            "they do not count the same sign word at later offsets."
+        ),
+    }
+
+
+def analyze_history_rows(
+    rows: list[dict[str, Any]], prefix_depth: int
+) -> dict[str, Any]:
     by_spectrum: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         by_spectrum[str(row["spectrum"])].append(row)
@@ -302,10 +399,13 @@ def analyze_history_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "mean_first_hit_k": mean(hits),
             "max_first_hit_k": max(hits) if hits else None,
             "mean_reversals": mean([row["reversals"] for row in group]),
-            "max_longest_negative_run": max(row["longest_negative_run"] for row in group),
+            "max_longest_negative_run": max(
+                row["longest_negative_run"] for row in group
+            ),
             "mean_bias": mean([row["bias"] for row in group]),
         }
 
+    min_bias = min((row["bias"] for row in rows), default=None)
     return {
         "primes": len(rows),
         "with_constructive_stage": len(with_hit),
@@ -318,22 +418,26 @@ def analyze_history_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "most_reversals": compact_extrema(rows, "reversals"),
         "most_obstructive_bias": (
             {
-                "value": min(row["bias"] for row in rows),
-                "primes": [
-                    row["p"]
-                    for row in rows
-                    if row["bias"] == min(r["bias"] for r in rows)
-                ][:32],
+                "value": min_bias,
+                "primes": [row["p"] for row in rows if row["bias"] == min_bias][:32],
             }
-            if rows
+            if min_bias is not None
             else {"value": None, "primes": []}
         ),
         "spectrum": spectrum_summary,
+        "prefix_cylinders": analyze_prefix_cylinders(rows, prefix_depth),
     }
 
 
-def analyze(summary: dict[str, Any], histories_path: str | None) -> dict[str, Any]:
+def analyze(
+    summary: dict[str, Any], histories_path: str | None, prefix_depth: int | None
+) -> dict[str, Any]:
     motifs = analyze_motifs(summary)
+    order = motifs["order"]
+    chosen_prefix_depth = order if prefix_depth is None else prefix_depth
+    if chosen_prefix_depth < 1:
+        raise SystemExit("--prefix-depth must be positive")
+
     result: dict[str, Any] = {
         "mode": "analyze-brec-I",
         "application": summary.get("application"),
@@ -343,17 +447,23 @@ def analyze(summary: dict[str, Any], histories_path: str | None) -> dict[str, An
         "hard_primes": require_int(summary, "hard_primes", "BREC summary"),
         "motifs": motifs,
         "claim_boundary": (
-            "Finite motif frequencies and absences are theorem-hunting signals only; "
-            "they do not establish universal exclusions or pruning authority."
+            "Finite motif frequencies, prefix-cylinder frequencies, and absences are "
+            "theorem-hunting signals only; they do not establish universal exclusions "
+            "or pruning authority."
         ),
     }
     if histories_path:
         rows = load_histories(histories_path)
         if len(rows) != result["hard_primes"]:
             raise SystemExit(
-                f"history ledger contains {len(rows)} primes; summary reports {result['hard_primes']}"
+                f"history ledger contains {len(rows)} primes; "
+                f"summary reports {result['hard_primes']}"
             )
-        result["histories"] = analyze_history_rows(rows)
+        if rows:
+            chosen_prefix_depth = min(chosen_prefix_depth, rows[0]["stages"])
+        result["histories"] = analyze_history_rows(rows, chosen_prefix_depth)
+    elif prefix_depth is not None:
+        raise SystemExit("--prefix-depth requires --histories")
     return result
 
 
@@ -373,34 +483,135 @@ def self_test() -> int:
             "down_minus_plus": 1,
         },
         "motifs": [
-            {"history": "+", "depth": 1, "count": 3, "spectrum": {"A": 1, "B": 2, "C": 0}},
-            {"history": "-", "depth": 1, "count": 5, "spectrum": {"A": 2, "B": 3, "C": 0}},
-            {"history": "+-", "depth": 2, "count": 2, "spectrum": {"A": 1, "B": 1, "C": 0}},
-            {"history": "-+", "depth": 2, "count": 1, "spectrum": {"A": 0, "B": 1, "C": 0}},
-            {"history": "--", "depth": 2, "count": 3, "spectrum": {"A": 1, "B": 2, "C": 0}},
-            {"history": "+--", "depth": 3, "count": 1, "spectrum": {"A": 1, "B": 0, "C": 0}},
-            {"history": "-+-", "depth": 3, "count": 1, "spectrum": {"A": 0, "B": 1, "C": 0}},
-            {"history": "--+", "depth": 3, "count": 1, "spectrum": {"A": 0, "B": 1, "C": 0}},
-            {"history": "---", "depth": 3, "count": 1, "spectrum": {"A": 1, "B": 0, "C": 0}},
+            {
+                "history": "+",
+                "depth": 1,
+                "count": 3,
+                "spectrum": {"A": 1, "B": 2, "C": 0},
+            },
+            {
+                "history": "-",
+                "depth": 1,
+                "count": 5,
+                "spectrum": {"A": 2, "B": 3, "C": 0},
+            },
+            {
+                "history": "+-",
+                "depth": 2,
+                "count": 2,
+                "spectrum": {"A": 1, "B": 1, "C": 0},
+            },
+            {
+                "history": "-+",
+                "depth": 2,
+                "count": 1,
+                "spectrum": {"A": 0, "B": 1, "C": 0},
+            },
+            {
+                "history": "--",
+                "depth": 2,
+                "count": 3,
+                "spectrum": {"A": 1, "B": 2, "C": 0},
+            },
+            {
+                "history": "+--",
+                "depth": 3,
+                "count": 1,
+                "spectrum": {"A": 1, "B": 0, "C": 0},
+            },
+            {
+                "history": "-+-",
+                "depth": 3,
+                "count": 1,
+                "spectrum": {"A": 0, "B": 1, "C": 0},
+            },
+            {
+                "history": "--+",
+                "depth": 3,
+                "count": 1,
+                "spectrum": {"A": 0, "B": 1, "C": 0},
+            },
+            {
+                "history": "---",
+                "depth": 3,
+                "count": 1,
+                "spectrum": {"A": 1, "B": 0, "C": 0},
+            },
         ],
     }
     out = analyze_motifs(summary)
     if out["reentrant"]["-+-"] != 1:
         raise SystemExit("analyze_brec self-test: reentrant count")
-    run2 = next(row for row in out["negative_run_escape"] if row["negative_run"] == 2)
+    run2 = next(
+        row for row in out["negative_run_escape"] if row["negative_run"] == 2
+    )
     if run2["escape_to_plus"] != 1 or run2["continue_minus"] != 1:
         raise SystemExit("analyze_brec self-test: negative-run escape")
     if "+" in out["absent_by_depth"]["1"] or "+-+" not in out["absent_by_depth"]["3"]:
         raise SystemExit("analyze_brec self-test: absent motif census")
-    puts = json.dumps({"self_test": "ok", "mode": "analyze-brec-I"}, sort_keys=True)
-    print(puts)
+
+    synthetic_rows = [
+        {
+            "p": 1009,
+            "spectrum": "A",
+            "stages": 4,
+            "defined": 4,
+            "undefined": 0,
+            "positive": 1,
+            "negative": 3,
+            "bias": -2,
+            "reversals": 1,
+            "parity": -1,
+            "initial": "-",
+            "terminal": "+",
+            "first_hit_k": 15,
+            "history": "---+",
+            "longest_negative_run": 3,
+            "longest_positive_run": 1,
+            "initial_negative_run": 3,
+        },
+        {
+            "p": 2521,
+            "spectrum": "B",
+            "stages": 4,
+            "defined": 4,
+            "undefined": 0,
+            "positive": 0,
+            "negative": 4,
+            "bias": -4,
+            "reversals": 0,
+            "parity": 1,
+            "initial": "-",
+            "terminal": "-",
+            "first_hit_k": 0,
+            "history": "----",
+            "longest_negative_run": 4,
+            "longest_positive_run": 0,
+            "initial_negative_run": 4,
+        },
+    ]
+    cylinders = analyze_prefix_cylinders(synthetic_rows, 4)
+    split3 = next(
+        row for row in cylinders["all_negative_splits"] if row["parent"] == "---"
+    )
+    if split3["constructive_count"] != 1 or split3["obstructive_count"] != 1:
+        raise SystemExit("analyze_brec self-test: prefix-cylinder split")
+
+    print(json.dumps({"self_test": "ok", "mode": "analyze-brec-I"}, sort_keys=True))
     return 0
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Analyze exact finite CBX/BREC Lane-I histories")
+    parser = argparse.ArgumentParser(
+        description="Analyze exact finite CBX/BREC Lane-I histories"
+    )
     parser.add_argument("summary", nargs="?", help="cbx-brec-i JSON summary")
     parser.add_argument("--histories", help="optional cbx-brec-i TSV history ledger")
+    parser.add_argument(
+        "--prefix-depth",
+        type=int,
+        help="start-of-corridor prefix-cylinder depth (defaults to motif order)",
+    )
     parser.add_argument("--json", action="store_true", help="emit compact JSON")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -410,7 +621,7 @@ def main() -> int:
     if not args.summary:
         parser.error("summary is required unless --self-test is used")
 
-    result = analyze(load_json(args.summary), args.histories)
+    result = analyze(load_json(args.summary), args.histories, args.prefix_depth)
     if args.json:
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     else:
