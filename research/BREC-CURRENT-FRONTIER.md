@@ -173,7 +173,7 @@ Parity and the fixed `1 mod3` residues remove the possible factors 2 and 3 in th
 
 ## 5. Mandatory full-corridor regression witnesses
 
-Two exact primes realize all five predecessor misses and then a Type-I-only construction at k23:
+Two exact primes first exposed the realizability of all five predecessor misses followed by a Type-I-only construction at k23:
 
 ```text
 p = 18,766,609    rho=14
@@ -187,11 +187,11 @@ early BREC history = -----
 k23 hit class       = Type-I-only.
 ```
 
-Any proposed incompatibility theorem for the five predecessor laws is false unless it includes additional hypotheses that preserve these verified states correctly.
+The 100M extension described below adds further full-corridor survivors, so these two are no longer the only finite examples. They remain mandatory regression witnesses because many exact normal forms were derived against them.
 
 ## 6. Current finite q23 -> k19 frontier
 
-At the preserved finite grade
+The initial preserved grade
 
 ```text
 p <= 30,000,000,
@@ -199,7 +199,7 @@ q23 Type-I-only,
 anchored predecessor prefix ----,
 ```
 
-there are exactly three candidates in the current forward census:
+contained exactly three candidates:
 
 ```text
 p=18,766,609    -----    k19 miss          q23 rho=14
@@ -207,11 +207,74 @@ p=25,180,849    ----+    k19 Type-II-only  q23 rho=14
 p=27,211,969    -----    k19 miss          q23 rho=5.
 ```
 
-Thus the first four exact predecessor obstructions plus the q23 rescue grammar collapse the 30M branch to three primes, and k19 removes one of them.
+All three happened to lie in hard class `169 mod840`. That pattern was deliberately treated as a candidate only and the same branch was extended to 100M.
 
-This is finite compression only. It is not a universal three-candidate theorem.
+### Adversarial extension through 100M
 
-The frontier analyzer now projects every candidate into the exact 439-state k19 automaton, including canonical state depth and atom representatives, so the finite q23 frontier can be compared directly with the 136 universal fixed-shift miss states.
+At
+
+```text
+p <= 100,000,000,
+q23 Type-I-only,
+anchored predecessor prefix ----,
+```
+
+the exact forward census contains nine candidates:
+
+```text
+7  k19 combined misses
+1  k19 Type-I-only construction
+1  k19 Type-II-only construction.
+```
+
+The nine candidates are
+
+```text
+18,766,609   mod840=169   -----   rho=14   k19 miss
+25,180,849   mod840=169   ----+   rho=14   k19 Type-II-only
+27,211,969   mod840=169   -----   rho=5    k19 miss
+31,935,121   mod840=1     ----+   rho=14   k19 Type-I-only
+35,870,641   mod840=121   -----   rho=5    k19 miss
+48,224,401   mod840=1     -----   rho=5    k19 miss
+49,554,961   mod840=1     -----   rho=14   k19 miss
+54,831,841   mod840=1     -----   rho=5    k19 miss
+85,241,521   mod840=1     -----   rho=5    k19 miss.
+```
+
+Therefore the apparent 30M implication
+
+```text
+---- q23 rescue => hard class 169
+```
+
+is false, and even the stronger observed child pattern
+
+```text
+----- q23 rescue => hard class 169
+```
+
+is false. The first full five-miss survivor outside class169 is
+
+```text
+p=35,870,641 = 121 mod840.
+```
+
+This falsification is preserved in `Q23-K19-100M-FINITE-FRONTIER.md` together with the exact workflow run and artifact digest.
+
+The seven 100M k19 misses occupy six distinct cyclic states:
+
+```text
+14:05551
+8:00501
+6:15555
+4:15555
+2:15555
+2:15055.
+```
+
+Their canonical state depths remain at most three, exactly as required by the universal fixed-shift k19 state theorem.
+
+The 100M result is finite compression and finite falsification only. It is not a universal nine-candidate theorem.
 
 ## 7. Exact synthesis files
 
@@ -226,9 +289,10 @@ research/K19-BREC-CYCLIC-STATE-COMPRESSION.md
 research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md
 research/K23-PREDECESSOR-CORRIDOR-NORMAL-FORMS.md
 research/K23-PREDECESSOR-CORE-PAIRWISE-COPRIME.md
+research/Q23-K19-100M-FINITE-FRONTIER.md
 ```
 
-with independent executable verifiers beside them.
+with independent executable verifiers beside the exact theorem modules.
 
 ## 8. Active proof target
 
@@ -247,17 +311,17 @@ T
  +-- 6T      q23 same-class Omega-two rescue.
 ```
 
-Priority questions:
+The 100M falsifier makes the next quotient clearer: hard class alone is too weak. Priority questions are now:
 
-1. Which of the 136 k19 miss states remain compatible with the first four exact predecessor laws and each q23 rescue class?
+1. Which of the 136 k19 combined-miss states remain arithmetically realizable after the first four exact predecessor laws and each q23 rescue class?
 2. Does the k11 pure/thin branch force a restricted k19 product exponent or canonical atom family?
-3. Do hard `T mod35`, q23 `rho`, and k19 cyclic state form a smaller exact quotient than any coordinate reveals?
+3. Does the joint signature `(T mod35, q23 rho, k11 branch, k19 state)` admit an exact compression not visible in any coordinate separately?
 4. What character-vector relations are forced across the pairwise-coprime affine tuple?
-5. Can a genuine cross-coordinate lemma remove an infinite family without contradicting the two mandatory full-corridor witnesses?
+5. Can a genuine cross-coordinate lemma remove an infinite family while preserving every explicit 100M full-corridor survivor?
 
 ## 9. Research discipline
 
-The k23 coincidence falsification remains the standing rule:
+The k23 coincidence and 30M hard-class falsifications reinforce the standing rule:
 
 ```text
 finite contraction
@@ -268,12 +332,12 @@ finite contraction
                 -> only then pruning authority
 ```
 
-This applies to motifs, prefix cylinders, residue patterns, state absences, and scheduler heuristics alike.
+This applies to motifs, prefix cylinders, residue patterns, state absences, hard-class patterns, and scheduler heuristics alike.
 
 ## 10. Claim boundary
 
 The fixed-shift normal forms, pairwise-coprime theorem, q23 integer rescue normal form, and k19 finite-group state closure are exact statements with executable verification.
 
-The 30M branch collapse is finite evidence only.
+The 30M and 100M branch collapses are finite evidence only. The 100M run also supplies a finite falsifier to the 30M hard-class pattern.
 
 No result here proves Erdős–Straus, a universal finite Lane-I ceiling, or a complete closed decomposition method.
