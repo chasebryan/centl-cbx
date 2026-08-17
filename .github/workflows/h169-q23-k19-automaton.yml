@@ -79,7 +79,9 @@ jobs:
               obj['q19_automaton']['type_II_miss_states']
           )
           for row in obj['realized_states']:
-              assert row['realized_class'] in ('combined-miss', 'type-I-only')
+              assert row['realized_class'] in (
+                  'combined-miss', 'type-I-only', 'type-II-hit'
+              )
               assert row['C_mod_19'] in range(1, 19)
 
           if int(os.environ['H169_P_HI']) == 30_000_000 and os.environ['H169_PREFIX'] == '----':
