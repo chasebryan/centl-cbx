@@ -1,0 +1,76 @@
+name: h169 k11 t0 k51 reciprocal shield
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_reciprocal_shield.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-RECIPROCAL-SHIELD.md'
+      - '.github/workflows/h169-k11-t0-k51-reciprocal-shield.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_reciprocal_shield.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-RECIPROCAL-SHIELD.md'
+      - '.github/workflows/h169-k11-t0-k51-reciprocal-shield.yml'
+
+jobs:
+  exact-reciprocal-shield:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: |
+          python3 -m py_compile \
+            research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
+            research/verify_h169_k11_t0_k51_reciprocal_shield.py
+
+      - name: Verify reciprocal shield theorem
+        run: |
+          python3 research/verify_h169_k11_t0_k51_reciprocal_shield.py \
+            > /tmp/h169-k51-reciprocal-shield.json
+
+      - name: Validate exact theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k51-reciprocal-shield.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'h169-k11-t0-k51-reciprocal-shield'
+          assert obj['canonical_parent'] == 'h169-k11-t0-k51-jacobi-normal-form'
+          assert obj['parameterization'] == {
+              't': '11u',
+              'R': '1+42u',
+              'C51': '55R',
+              'p': '220R-51',
+          }
+          assert obj['reciprocity_character']['identity'] == '(-51/q)=(q/3)(q/17)=Jacobi(q/51)'
+          assert obj['fixed_seed_character']['5_is_QR_mod_p'] is True
+          assert obj['fixed_seed_character']['11_is_QR_mod_p'] is True
+          assert obj['residual_equivalence'] == (
+              'for every residual prime q|R: q in H51 iff (p/q)=+1 iff (q/p)=+1'
+          )
+          assert obj['global_normal_form'] == (
+              'k51 combined miss iff every prime divisor of C51 is a quadratic residue modulo p'
+          )
+          assert obj['prime_relative_bridge']['regression_examples'] == 5
+          assert obj['prime_relative_bridge']['residual_prime_checks'] == 6
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-t0-k51-reciprocal-shield
+          path: /tmp/h169-k51-reciprocal-shield.json
+          if-no-files-found: error
+          retention-days: 30
