@@ -53,10 +53,10 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:latest
     env:
-      BREC_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.hi || '20000' }}
-      BREC_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '40' }}
+      BREC_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.hi || '2000000' }}
+      BREC_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '80' }}
       BREC_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '8' }}
-      BREC_SEGMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.segment || '10000' }}
+      BREC_SEGMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.segment || '250000' }}
     steps:
       - name: Install build tools
         run: dnf -y install git gcc make python3
