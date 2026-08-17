@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 import propagate_h169_dependency_state as dep
+import verify_h169_k11_future_factor_partition as k11future
 
 
 ROUTE_SEED = {
@@ -115,7 +116,6 @@ def irreducible_unsat_core(route: str, atoms: list[Atom]) -> list[Atom]:
                 core = trial
                 changed = True
 
-    # Guard the advertised irreducibility property directly.
     if not contradiction(route, core):
         raise AssertionError("core minimization lost contradiction")
     for atom in core:
@@ -156,6 +156,23 @@ def affine_ledger(route: str) -> dict[str, object]:
     }
 
 
+def k11_future_ledger() -> dict[str, object]:
+    obj = k11future.verify()
+    return {
+        "premise": "inherited h169 k11 combined miss",
+        "allowed_t_mod_11": obj["k11_combined_miss_implies_t_mod_11"],
+        "deterministic_factor11_partition": obj["partition"],
+        "possible_future_factor11_shifts": obj["future_factor_11_shifts"],
+        "latest_forced_shift": obj["latest_forced_shift"],
+        "calendar_to_grammar_interfaces": obj["calendar_to_grammar_interfaces"],
+        "interpretation": (
+            "the early k11 obstruction does not merely carry a positive character; "
+            "its phase schedules literal prime11 to re-enter one deterministic "
+            "later companion among k35,k39,k43,k51,k63"
+        ),
+    }
+
+
 def obligation_ledger(route: str, propagated: dict[str, object]) -> dict[str, object]:
     domains = propagated.get("domains", {})
     forced = propagated.get("forced", {})
@@ -183,6 +200,7 @@ def obligation_ledger(route: str, propagated: dict[str, object]) -> dict[str, ob
         "forced_coordinates": forced,
         "derived_valuation_and_seam": derived,
         "required_support_and_character_obligations": supports,
+        "k11_future_factor11_obligation": k11_future_ledger(),
         "affine_and_support_obligations": affine_ledger(route),
         "theorem_rules_that_contracted_this_query": trace,
         "interpretation": (
@@ -249,8 +267,6 @@ def parse_state_json(raw: str | None) -> dict[str, frozenset[object]]:
 
 
 def self_test() -> None:
-    # The canonical two-rule contradiction:
-    # Route-B BARE -> tau19=8 -> k27=Q, incompatible with k27=A.
     bad = analyze(
         "B",
         dep.parse_constraints({"k19_mode": "BARE", "k27_mode": "A"}),
@@ -272,8 +288,6 @@ def self_test() -> None:
     assert assumption_fields == {"k19_mode", "k27_mode"}
     assert core["atom_count"] == 4  # type: ignore[index]
 
-    # A surviving state should expose the same forced chain as the base
-    # dependency propagator, but now as an obligation ledger.
     live = analyze("B", dep.parse_constraints({"k19_mode": "BARE"}))
     assert live["contradiction"] is False
     obligations = live["obligations"]  # type: ignore[index]
@@ -281,8 +295,11 @@ def self_test() -> None:
     assert obligations["forced_coordinates"]["k27_mode"] == "Q"  # type: ignore[index]
     support = obligations["required_support_and_character_obligations"]  # type: ignore[index]
     assert "k27 Q: every prime factor of E is QR mod27" in support
+    k11 = obligations["k11_future_factor11_obligation"]  # type: ignore[index]
+    assert k11["allowed_t_mod_11"] == [0, 2, 3, 4, 8]
+    assert k11["possible_future_factor11_shifts"] == [35, 39, 43, 51, 63]
+    assert k11["latest_forced_shift"] == 63
 
-    # A parity contradiction is also reducible to a small theorem core.
     odd_thin = analyze(
         "B",
         dep.parse_constraints({"tau4": 1, "k47_mode": "THIN"}),
