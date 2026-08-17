@@ -1,43 +1,39 @@
 # h169 cross-coordinate obligation core
 
-**Status:** exact explanation layer over the landed h169 pair-route grammar, revision 3  
+**Status:** exact explanation layer over the landed h169 pair-route grammar, revision 4  
 **Date:** 2026-08-17  
 **Analyzer:** `analyze_h169_cross_obligation_core.py`  
-**New coordinate:** `t mod11` inherited from the exact h169 k11 miss theorem
+**Ancestry coordinate:** `t mod11` from the exact h169 k11-miss theorem
 
-## 1. The obligation machine now crosses coordinates
-
-The first obligation-core analyzer explained contradictions already visible inside the reduced h169 dependency grammar.
-
-This layer adds one genuinely external ancestry coordinate:
-
-```text
-t11 = t mod11.
-```
+## 1. The machine now carries simultaneous arithmetic obligations
 
 Under an inherited h169 k11 combined miss,
 
 ```text
-t11 in {0,2,3,4,8}.
+t11=t mod11 in {0,2,3,4,8}.
 ```
 
-The analyzer tensors that exact five-phase domain with the landed Route-A / Route-B grammar and carries one explicit derived proposition:
+The analyzer tensors this exact five-phase ancestry coordinate with the landed h169 pair-route dependency grammar.
+
+A state is no longer represented only by a sign history. It may carry
 
 ```text
-factor11_in_R.
+phase restrictions
+survivor modes
+forced rational factors
+signed-support shells
+support-subgroup normal forms
+CRT phase deletions
+valuation budgets
+persistent local cycles
+and contradiction cores.
 ```
 
-This allows an earlier k11 obstruction to collide directly with the later k19 residual-support grammar.
-
-Revision 3 also lets a phase carry exact downstream resource certificates even when no branch-deletion theorem is available. The k43 child carries a finite state and valuation contraction. The k51 child carries a finite state contraction plus a persistent composite Jacobi shield.
+This is the intended obligation-machine architecture: accumulate exact consequences until either the state dies or the remaining escape mechanism becomes explicit.
 
 ---
 
-## 2. Two cross-coordinate theorem atoms
-
-The contradiction layer compiles exactly two theorem atoms.
-
-### Phase-to-reservoir theorem
+## 2. The first cross-coordinate contradiction remains four atoms
 
 On h169,
 
@@ -45,14 +41,17 @@ On h169,
 T=8+35t.
 ```
 
-Therefore
+The phase
 
 ```text
-t=8 mod11
-iff
+t11=8
+```
+
+gives
+
+```text
 T=2 mod11
-iff
-11|C19.
+-> 11|C19.
 ```
 
 On either realized pair route,
@@ -61,342 +60,375 @@ On either realized pair route,
 C19=S*R
 ```
 
-with
+with `S=391` or `1081`, both coprime to11. Hence
 
 ```text
-S=391 or1081
+11|R.
 ```
 
-and
+But k19 BARE requires
 
 ```text
-gcd(S,11)=1.
+every q|R satisfies q=1 mod19,
 ```
 
-Hence inside the inherited k11-miss phase domain,
-
-```text
-factor11_in_R
-iff
-t mod11=8.
-```
-
-### BARE exclusion theorem
-
-The landed k19 BARE mode requires
-
-```text
-every prime divisor of R is 1 mod19.
-```
-
-But
+while
 
 ```text
 11 mod19=11.
 ```
 
-So
+Therefore
 
 ```text
-factor11_in_R
-->
-k19_mode != BARE.
-```
-
-These are kept as two separate atoms so the contradiction engine can expose the actual arithmetic bridge instead of hiding it inside one black-box predicate.
-
----
-
-## 3. Canonical four-atom cross-coordinate contradiction
-
-Ask for
-
-```text
-t mod11=8
-k19_mode=BARE.
-```
-
-The analyzer returns an inclusion-minimal core with four atoms:
-
-```text
-ASSUMPTION: t mod11=8
-ASSUMPTION: k19_mode=BARE
-THEOREM:    t11=8 iff factor11_in_R
-THEOREM:    factor11_in_R excludes k19 BARE.
-```
-
-Delete any one atom and the cross grammar is satisfiable again.
-
-This minimality is relative to the already-landed h169 dependency grammar, which is held fixed as background proof data.
-
-The arithmetic explanation is exactly
-
-```text
-t11=8
--> 11|R
-
-BARE
--> support(R) subset 1 mod19
-
-11 mod19 !=1
+t11=8 + k19 BARE
 -> contradiction.
 ```
 
-That is the kind of explanation BREC should emit for a dead survivor state.
+The analyzer returns the inclusion-minimal four-atom explanation
+
+```text
+ASSUMPTION  t11=8
+ASSUMPTION  k19_mode=BARE
+THEOREM     t11=8 iff factor11_in_R
+THEOREM     factor11_in_R excludes BARE.
+```
+
+Minimality is relative to the landed h169 dependency grammar held fixed as background proof data.
 
 ---
 
-## 4. Formal-state contraction
+## 3. The same phase also contracts the vertical resource
 
-Before adding `t mod11`, the landed grammar contains
+On `t11=8`, any surviving k19 miss must be
+
+```text
+FULL_QR.
+```
+
+The exact seed11 q19 Type-II-miss automaton also gives
+
+```text
+Omega_NR(C19)<=2,
+```
+
+instead of the generic unseeded h169 local bound
+
+```text
+Omega_NR(C19)<=8.
+```
+
+So one early ancestry phase simultaneously produces
+
+```text
+horizontal deletion:
+    BARE removed
+
+vertical contraction:
+    Omega_NR 8 -> 2.
+```
+
+This is the first clean instance of the horizontal/vertical coupling sought by the BREC program.
+
+---
+
+## 4. Phase t11=2 imports the canonical k43 seeded shell
+
+The canonical theorem `H169-K11-T2-K43-SEEDED-SHELL.md` proves
+
+```text
+t11=2
+-> T=1 mod11
+-> 11|C43.
+```
+
+One forced factor11 preloads exact q43 signed support
+
+```text
+{1,4,11}.
+```
+
+The complete local Type-II-miss state space contracts
+
+```text
+18,048 -> 2,317,
+```
+
+and its combined-miss portion contracts
+
+```text
+7,740 -> 1,217.
+```
+
+The seeded shell also proves the exact one-occurrence absorber set
+
+```text
+{32,39,42} mod43.
+```
+
+Thus a k43 Type-II miss cannot contain any additional prime-factor occurrence in those residue classes.
+
+For a combined miss, the seed creates a new h169 CRT deletion
+
+```text
+t mod43 != 9.
+```
+
+Finally, the exact nonresidue valuation resource contracts
+
+```text
+Omega_NR(C43): 20 -> 14.
+```
+
+The obligation machine now carries all four consequences together:
+
+```text
+forced factor
++ signed-support shell
++ forbidden factor residues
++ CRT phase deletion
++ valuation contraction.
+```
+
+---
+
+## 5. Phase t11=0 imports the canonical k51 Jacobi normal form
+
+This child is stronger than a factor11-only seed.
+
+Write
+
+```text
+t=11u.
+```
+
+Then
+
+```text
+C51=(p+51)/4
+   =55(1+42u).
+```
+
+So the correct hard-class seed is
+
+```text
+[5,11].
+```
+
+Write
+
+```text
+C51=55R.
+```
+
+Define
+
+```text
+H51={r in U(51):(r/3)(r/17)=+1}.
+```
+
+The canonical theorem `H169-K11-T0-K51-JACOBI-NORMAL-FORM.md` proves the exact word-level equivalence
+
+```text
+k51 combined miss
+iff
+every prime-factor occurrence of R lies in H51.
+```
+
+The seed `[5,11]` Type-II-miss closure has exactly
+
+```text
+86 states
+=26 combined misses
++60 Type-I-only states.
+```
+
+The augmented word automaton proves
+
+```text
+combined misses using any outside-H51 residual factor: 0.
+```
+
+So this is not merely a sufficient support shield. It is the complete combined-miss normal form on the selected phase.
+
+---
+
+## 6. The k51 normal form creates a second CRT contraction
+
+For h169 primes,
+
+```text
+p=1 mod3.
+```
+
+A k51 combined miss has `p` in the Jacobi-positive half of `U(51)`, therefore
+
+```text
+(p/17)=+1.
+```
+
+This leaves exactly
+
+```text
+t mod17 in {0,2,8,10,11,12,15,16}.
+```
+
+Among the 16 prime-admissible mod17 phases, exactly one half remain.
+
+Thus the k51 support normal form immediately feeds back into the global CRT phase state.
+
+---
+
+## 7. k51 also exposes the exact vertical escape carrier
+
+The companion theorem `H169-K11-T0-K51-PERSISTENT-SHIELD-CYCLE.md` asks whether valuation at the already-forced prime11 can remain inside the k51 combined-miss normal form.
+
+It can, locally.
+
+Starting from the correct `[5,11]` seed, four additional copies of11 saturate the full subgroup
+
+```text
+H51=<11>.
+```
+
+Equivalently,
+
+```text
+total v11(C51)=5
+```
+
+is enough to saturate the shield support.
+
+After saturation, the support remains exactly `H51`, while the center rotates by multiplication by11. Since
+
+```text
+ord_51(11)=16,
+```
+
+the exact signed-box state has period16.
+
+Every state on that saturated cycle is a combined miss.
+
+Therefore
+
+```text
+local k51 residue geometry imposes no finite ceiling on v11(C51).
+```
+
+This is a useful negative theorem. It identifies precisely what a global termination proof must break.
+
+---
+
+## 8. The new global target is to puncture H51
+
+The k51 local problem is now solved sharply enough that more local enumeration is not the priority.
+
+The simultaneous survivor system must force
+
+```text
+some prime q|R with q notin H51,
+```
+
+or equivalently
+
+```text
+Jacobi(q/51)=-1.
+```
+
+The canonical k51 normal form then converts that single outside-H51 occurrence into a non-miss.
+
+So the next desired contradiction chain is
+
+```text
+neighboring/ancestral cofactor obligation
+-> force outside-H51 factor in R
+-> k51 Jacobi normal form
+-> k51 cannot remain a combined miss.
+```
+
+The ten-cofactor support-separation theorem makes this genuinely a simultaneous arithmetic problem: large odd support cannot simply be shared between neighboring affine cofactors.
+
+---
+
+## 9. Current five-child k11 obligation map
+
+The exact h169 k11 phase tree now carries:
+
+```text
+t11=8 -> C19
+    factor11 enters R
+    k19 BARE deleted
+    Omega_NR 8 -> 2
+
+t11=4 -> C35
+    factor11 enters the k35 branch
+    S7 deleted
+    k35 miss becomes J35-only
+
+t11=3 -> C39
+    routed J39+ support theorem active
+
+t11=2 -> C43
+    forced support {1,4,11}
+    Type-II-miss states 18,048 -> 2,317
+    combined misses 7,740 -> 1,217
+    added residues {32,39,42} forbidden under Type-II miss
+    t43=9 deleted under combined miss
+    Omega_NR 20 -> 14
+
+t11=0 -> C51
+    C51=55R with forced seed [5,11]
+    combined miss iff every residual factor lies in H51
+    seed55 Type-II-miss states = 86
+    combined states = 26
+    t17 restricted to {0,2,8,10,11,12,15,16}
+    H51 saturates at total v11=5
+    exact persistent cycle period =16
+    no local v11 ceiling.
+```
+
+There is no unclassified child in this factor11 calendar.
+
+The question has changed from
+
+```text
+Where does the early obstruction send factor11?
+```
+
+to
+
+```text
+Can one simultaneous survivor satisfy the complete obligation set
+attached to its selected child and all neighboring cofactors?
+```
+
+That is the right compression target.
+
+---
+
+## 10. Formal grammar counts remain separate from arithmetic existence
+
+The landed base grammar contains
 
 ```text
 Route A: 105,600 formal tuples
 Route B: 147,900 formal tuples.
 ```
 
-Tensoring naively with the five allowed k11 phases would give
-
-```text
-Route A: 528,000
-Route B: 739,500.
-```
-
-The cross-coordinate rule deletes BARE exactly on the `t11=8` slice, leaving
+Tensoring with the five k11 phases and applying the exact `t11=8` BARE deletion leaves
 
 ```text
 Route A: 516,450
 Route B: 736,950.
 ```
 
-These are formal grammar counts only. They are not arithmetic survivor counts or densities.
+These are formal symbolic grammar counts only.
 
-The significance is not the percentage reduction. It is that the reduction comes from a different predecessor coordinate and therefore demonstrates real simultaneous-state coupling.
-
----
-
-## 5. Phase t11=8: mode deletion plus valuation contraction
-
-Query
-
-```text
-t mod11=8.
-```
-
-The analyzer forces
-
-```text
-factor11_in_R=true
-k19_mode=FULL_QR.
-```
-
-It also attaches the exact seeded q19 valuation resource:
-
-```text
-Omega_NR(C19) <= 2
-```
-
-for every k19 Type-II miss on that phase.
-
-The generic unseeded h169 k19 budget is 8, so the same ancestry phase simultaneously deletes a mode and contracts the remaining NR resource:
-
-```text
-BARE deleted
-Omega_NR: 8 -> 2.
-```
+The k43 and k51 imported theorems are not currently encoded as additional Boolean tuple deletions because their strongest conclusions concern signed support, factor words, CRT subphases, and resource ceilings. They are carried as proof-bearing obligation objects for the next simultaneous intersection step.
 
 ---
 
-## 6. Phase t11=2: k43 finite-state and valuation contraction
-
-On
-
-```text
-t mod11=2,
-```
-
-we have
-
-```text
-T mod11=1
-```
-
-and
-
-```text
-C43=(p+43)/4=6T+5,
-```
-
-so
-
-```text
-11|C43.
-```
-
-The exact q43 signed-box automaton gives
-
-```text
-unseeded Type-II-miss states: 18,048
-seed11 Type-II-miss states:    2,317
-```
-
-with exact seed11 split
-
-```text
-combined-miss: 1,217
-Type-I-only:   1,100.
-```
-
-The weighted miss graph has no positive-NR edge inside an SCC and gives
-
-```text
-unseeded Omega_NR(C43) <=20
-seed11   Omega_NR(C43) <=14.
-```
-
-Therefore a `t11=2` query receives a theorem-backed resource object recording
-
-```text
-11|C43
-state(C43) in exact seed11 q43 closure of size2317
-Omega_NR(C43)<=14.
-```
-
-This is not yet a k43 route deletion because no landed k43 support law has been found that conflicts with the seed11 closure.
-
----
-
-## 7. Phase t11=0: k51 composite shield and explicit vertical escape
-
-On
-
-```text
-t mod11=0,
-```
-
-we have
-
-```text
-T mod11=8
-```
-
-and
-
-```text
-C51=(p+51)/4=6T+7,
-```
-
-so
-
-```text
-11|C51.
-```
-
-The correct local object is the composite unit group
-
-```text
-U(51)=(Z/51Z)^*,
-```
-
-with 32 units.
-
-The exact U(51) Type-II-miss automaton contracts from
-
-```text
-unseeded: 3,337 states
-seed11:     636 states
-```
-
-with seed11 split
-
-```text
-combined-miss: 268
-Type-I-only:   368.
-```
-
-But factor11 also generates
-
-```text
-H51=<11>
-```
-
-with
-
-```text
-ord_51(11)=16
-|H51|=16
-[U(51):H51]=2
-H51=ker Jacobi(./51).
-```
-
-Both Lane-I target cosets lie outside H51. Thus any C51 whose prime-factor residue support lies entirely in H51 is a combined miss modulo51.
-
-Pure factor11 support reaches the full H51 after eight occurrences and then enters an exact period-16 combined-miss cycle:
-
-```text
-support saturation exponent = 8
-cycle length = 16
-local factor11 multiplicity ceiling = none.
-```
-
-This is the cleanest explicit vertical escape carrier currently present in the h169 obligation grammar.
-
-The analyzer now emits it as a live resource certificate, not as a contradiction:
-
-```text
-k51_composite_shield_obligation
-```
-
-whose research meaning is
-
-```text
-local k51 geometry cannot kill this state;
-the simultaneous cofactor system must puncture H51.
-```
-
----
-
-## 8. Why this is the desired architecture
-
-A survivor should not be stored merely as
-
-```text
-------
-```
-
-or as a bag of independent shift labels.
-
-The proof state is becoming
-
-```text
-phase obligations
-+ survivor modes
-+ forced rational factors
-+ local finite-state certificates
-+ persistent SCC/shield certificates
-+ support-subgroup laws
-+ separated reservoirs
-+ valuation budgets
-+ affine companion identities.
-```
-
-Then a state can end in one of two useful ways:
-
-```text
-contradiction
-```
-
-or
-
-```text
-an exact description of the only remaining escape mechanism.
-```
-
-The k51 child is the second case. That is valuable because it tells the next theorem exactly what it must break.
-
----
-
-## 9. Interface
+## 11. Interface
 
 Self-test:
 
@@ -412,15 +444,7 @@ python3 research/analyze_h169_cross_obligation_core.py \
   --state-json '{"t_mod_11":8,"k19_mode":"BARE"}'
 ```
 
-Live k19 phase ledger:
-
-```sh
-python3 research/analyze_h169_cross_obligation_core.py \
-  --route A \
-  --state-json '{"t_mod_11":8}'
-```
-
-Live k43 resource ledger:
+k43 obligation ledger:
 
 ```sh
 python3 research/analyze_h169_cross_obligation_core.py \
@@ -428,7 +452,7 @@ python3 research/analyze_h169_cross_obligation_core.py \
   --state-json '{"t_mod_11":2}'
 ```
 
-Live k51 shield ledger:
+k51 obligation ledger:
 
 ```sh
 python3 research/analyze_h169_cross_obligation_core.py \
@@ -436,69 +460,14 @@ python3 research/analyze_h169_cross_obligation_core.py \
   --state-json '{"t_mod_11":0}'
 ```
 
-The state JSON also accepts the landed base grammar fields, so ancestry phase constraints can be intersected with k19/k27/k31/k35/k47 mode assumptions.
-
 ---
 
-## 10. Status of the five k11 factor11 children
+## 12. Claim boundary
 
-The exact phase partition now reads
+The five `t mod11` values are necessary phases under an inherited h169 k11 combined miss. The analyzer does not assert every phase is arithmetically realized after full ancestry.
 
-```text
-t11=8 -> factor11 at k19
-           BARE deleted
-           Omega_NR: 8 -> 2
+The k43 and k51 normal forms are exact local residue/multiplicity theorems with exact h169 phase bridges. Their abstract states are not automatically arithmetic realizations.
 
-t11=4 -> factor11 at k35
-           existing 3-adic branch structure active
+The persistent k51 factor11 cycle proves only that local k51 geometry cannot impose a finite `v11` ceiling. It does not assert h169 prime corridor candidates realize unbounded `v11`.
 
-t11=3 -> factor11 at k39
-           existing routed J39+ support theorem active
-
-t11=2 -> factor11 at k43
-           Type-II-miss states: 18048 -> 2317
-           Omega_NR: 20 -> 14
-
-t11=0 -> factor11 at k51
-           Type-II-miss states: 3337 -> 636
-           H51=<11>=ker Jacobi(./51)
-           persistent period-16 combined-miss shield.
-```
-
-There is no longer an unclassified child in this particular k11 factor11 calendar.
-
-The frontier is no longer
-
-```text
-Where does the k11 obstruction send factor11?
-```
-
-It is
-
-```text
-Can one simultaneous h169 survivor satisfy all of the obligations
-created by its selected child together with the neighboring cofactors?
-```
-
-For `t11=0`, this question has a particularly sharp form:
-
-```text
-Can earlier or later cofactor obligations force some q|C51
-with Jacobi(q/51)=-1?
-```
-
-Such a factor would puncture H51. If no such factor is forced, the proof must show that remaining inside H51 is incompatible with the other consecutive-cofactor support laws.
-
----
-
-## 11. Claim boundary
-
-The base h169 grammar remains fixed background proof data. The cross-core minimality claim is relative to that background.
-
-The five `t mod11` values are necessary phases under an inherited h169 k11 miss; the analyzer does not assert every phase has an arithmetic realization.
-
-The k43 and k51 certificates are complete abstract local automaton results conditional on their phases and a Type-II miss at the corresponding coordinate. They do not assert every local state is arithmetically realized.
-
-The persistent k51 factor11 cycle is a local residue-state possibility, not an existence theorem for prime corridor candidates with arbitrary 11-adic valuation.
-
-Formal tuple counts are not prime counts. No finite Lane-I ceiling or Erdős-Straus proof follows from this module alone.
+Formal tuple counts are not prime counts. No finite Lane-I ceiling or Erdős-Straus proof is claimed here.
