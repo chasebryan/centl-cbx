@@ -3,15 +3,24 @@ name: hard-class predecessor forced seeds
 on:
   pull_request:
     paths:
+      - 'kernel/analyze_brec_cylinder.py'
       - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
       - 'research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md'
+      - 'research/H169-H289-H529-K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
   push:
     branches: [main]
     paths:
+      - 'kernel/analyze_brec_cylinder.py'
       - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
 
 jobs:
@@ -24,16 +33,25 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Compile exact verifier
+      - name: Compile exact verifiers
         run: |
           python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
             research/classify_signed_box_residue_automaton.py \
-            research/verify_hard_class_predecessor_forced_seeds.py
+            research/verify_k11_brec_obstruction_normal_form.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_hard_class_predecessor_forced_seeds.py \
+            research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py
 
       - name: Verify hard-class seed reductions
         run: |
           python3 research/verify_hard_class_predecessor_forced_seeds.py \
             > /tmp/hard-class-predecessor-seeds.json
+
+      - name: Verify h169 h289 h529 k11 QR collapse
+        run: |
+          python3 research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
+            > /tmp/h169-h289-h529-k11.json
 
       - name: Validate exact conclusions
         run: |
@@ -42,6 +60,8 @@ jobs:
           from pathlib import Path
 
           obj = json.loads(Path('/tmp/hard-class-predecessor-seeds.json').read_text())
+          k11 = json.loads(Path('/tmp/h169-h289-h529-k11.json').read_text())
+
           assert obj['verified'] is True
           assert obj['hard_to_T_mod35'] == {
               '1': 1, '121': 6, '169': 8, '289': 13, '361': 16, '529': 23
@@ -68,12 +88,32 @@ jobs:
           assert rows[289]['k19']['type_II_miss_states'] == 27
           assert rows[361]['k19']['seed_residues'] == [5]
           assert rows[529]['k19']['seed_residues'] == []
+
+          assert k11['verified'] is True
+          assert k11['hard_classes'] == [169, 289, 529]
+          seeded = k11['seeded_q11_automaton']
+          assert seeded['seed_residues'] == [3, 5]
+          assert seeded['type_II_miss_states'] == 5
+          assert seeded['combined_miss_states'] == 5
+          assert seeded['type_I_only_states'] == 0
+          assert seeded['qr_only_combined_miss_states'] == 5
+
+          regressions = {row['p']: row for row in k11['regressions']}
+          for p in (2689, 12049, 5569):
+              assert regressions[p]['sign'] == '-'
+              assert regressions[p]['general_k11_branch'] == 'pure-QR'
+              assert regressions[p]['all_prime_divisors_QR_mod_11'] is True
+          for p in (1009, 1129, 3049):
+              assert regressions[p]['sign'] == '+'
+              assert regressions[p]['all_prime_divisors_QR_mod_11'] is False
           PY
 
-      - name: Preserve exact seeded-state table
+      - name: Preserve exact seeded-state tables
         uses: actions/upload-artifact@v4
         with:
           name: hard-class-predecessor-forced-seeds
-          path: /tmp/hard-class-predecessor-seeds.json
+          path: |
+            /tmp/hard-class-predecessor-seeds.json
+            /tmp/h169-h289-h529-k11.json
           if-no-files-found: error
           retention-days: 30
