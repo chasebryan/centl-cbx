@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Analyze the exact k=19 state on the forward q23 Type-I rescue branch.
+"""Analyze k=19 on the forward q23 Type-I rescue branch.
 
-The first four BREC obstruction coordinates now have exact normal forms on
-M=HD.  This tool uses the forward rescue-branch search to select candidates
-that satisfy an anchored prefix through k=15 (default '----'), then studies
-the still-exact signed-box state at k=19 where C19=6M-1.
+The first four BREC obstruction coordinates have exact normal forms.  This tool
+selects exact q23 Type-I-only candidates satisfying an anchored prefix through
+k=15, then projects their k19 signed-box state into the exhaustive cyclic-state
+model from verify_k19_brec_state_compression.py.
 
-The output is finite structural evidence only.  It is designed to expose the
-next residue/character normal-form candidate and to preserve immediate
-counterexamples rather than promote an observed absence to a theorem.
+This lets a finite frontier row carry both its ordinary factor/residue signature
+and the exact compressed state (c,S), including a canonical <=4-atom history.
+For miss states the canonical representative is always <=3 atoms by the
+independently verified k19 state theorem.
+
+The output remains finite structural evidence only.  Frequencies or observed
+absences do not become pruning rules or universal theorems.
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ sys.path.insert(0, str(KERNEL))
 
 import analyze_brec_cylinder as cylinder  # noqa: E402
 import search_q23_typei_rescue_branch as rescue  # noqa: E402
+import verify_k19_brec_state_compression as k19state  # noqa: E402
 
 
 def factor_character_signature(C: int) -> dict[str, Any]:
@@ -59,6 +64,35 @@ def factor_character_signature(C: int) -> dict[str, Any]:
     }
 
 
+def cyclic_signature(
+    C: int,
+    distance: dict[tuple[int, int], int],
+    predecessor: dict[tuple[int, int], tuple[tuple[int, int], int]],
+) -> dict[str, Any]:
+    raw = k19state.state_from_factorization(C)
+    state = raw["state"]
+    c, mask = state
+    if state not in distance:
+        raise RuntimeError(f"C19={C}: exact cyclic state escaped exhaustive closure")
+
+    canonical_atoms = k19state.canonical_atoms(state, predecessor)
+    canonical_depth = distance[state]
+    if bool(raw["combined_miss"]) and canonical_depth > 3:
+        raise RuntimeError(f"C19={C}: miss state exceeds proved canonical depth 3")
+
+    return {
+        "state_key": f"{c}:{mask:05x}",
+        "c": c,
+        "support_exponents": raw["support_exponents"],
+        "support_size": raw["support_size"],
+        "type_II_exp": raw["type_II_exp"],
+        "type_I_exp": raw["type_I_exp"],
+        "combined_miss": raw["combined_miss"],
+        "canonical_depth": canonical_depth,
+        "canonical_atoms": canonical_atoms,
+    }
+
+
 def analyze(
     p_hi: int,
     required_prefix: str,
@@ -79,13 +113,18 @@ def analyze(
         max_candidates,
     )
 
-    state_counts: Counter[str] = Counter()
+    distance, predecessor = k19state.closure()
+
+    hit_counts: Counter[str] = Counter()
     support_counts: Counter[int] = Counter()
-    spectrum_counts: Counter[int] = Counter()
     branch_counts: Counter[int] = Counter()
     nr_omega_counts: Counter[int] = Counter()
     p19_counts: Counter[int] = Counter()
     residue_pattern_counts: Counter[str] = Counter()
+    cyclic_state_counts: Counter[str] = Counter()
+    cyclic_depth_counts: Counter[int] = Counter()
+    canonical_atom_counts: Counter[str] = Counter()
+    miss_state_counts: Counter[str] = Counter()
     examples: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     for row in search_result["results"]:
@@ -98,19 +137,32 @@ def analyze(
         if int(stage["C"]) != C19:
             raise RuntimeError(f"p={p}: C19 affine recurrence mismatch")
 
-        sig = factor_character_signature(C19)
-        hit_class = stage["hit_class"]
-        state_counts[hit_class] += 1
+        factor_sig = factor_character_signature(C19)
+        cyclic = cyclic_signature(C19, distance, predecessor)
+        hit_class = str(stage["hit_class"])
+        exact_miss = hit_class == "miss"
+        if bool(cyclic["combined_miss"]) != exact_miss:
+            raise RuntimeError(f"p={p}: cyclic state disagrees with exact k19 hit class")
+        if int(stage["support_size"]) != int(cyclic["support_size"]):
+            raise RuntimeError(f"p={p}: cyclic support size disagrees with exact stage")
+
+        hit_counts[hit_class] += 1
         support_counts[int(stage["support_size"])] += 1
         branch_counts[int(row["D_class_mod_23"])] += 1
-        nr_omega_counts[int(sig["nr_Omega"])] += 1
+        nr_omega_counts[int(factor_sig["nr_Omega"])] += 1
         p19_counts[p % 19] += 1
+        cyclic_state_counts[str(cyclic["state_key"])] += 1
+        cyclic_depth_counts[int(cyclic["canonical_depth"])] += 1
+        atom_key = ",".join(str(a) for a in cyclic["canonical_atoms"])
+        canonical_atom_counts[atom_key] += 1
+        if exact_miss:
+            miss_state_counts[str(cyclic["state_key"])] += 1
 
         pattern_key = ",".join(
             f"{r}^{e}"
             for r, e in sorted(
                 (int(r), int(e))
-                for r, e in sig["residue_valuations_mod_19"].items()
+                for r, e in factor_sig["residue_valuations_mod_19"].items()
             )
         )
         residue_pattern_counts[pattern_key] += 1
@@ -126,11 +178,12 @@ def analyze(
                     "early_history": row["early_history"],
                     "C19": C19,
                     "k19": stage,
-                    "factor_character": sig,
+                    "factor_character": factor_sig,
+                    "cyclic_state": cyclic,
                 }
             )
 
-    misses = state_counts.get("miss", 0)
+    misses = hit_counts.get("miss", 0)
     total = len(search_result["results"])
     return {
         "mode": "analyze-q23-rescue-k19-frontier",
@@ -140,7 +193,7 @@ def analyze(
         "candidates": total,
         "k19_misses": misses,
         "k19_constructive": total - misses,
-        "k19_hit_classes": dict(sorted(state_counts.items())),
+        "k19_hit_classes": dict(sorted(hit_counts.items())),
         "k19_support_sizes": {
             str(k): v for k, v in sorted(support_counts.items())
         },
@@ -153,29 +206,46 @@ def analyze(
         "p_mod_19_counts": {
             str(k): v for k, v in sorted(p19_counts.items())
         },
+        "k19_cyclic_state_counts": dict(sorted(cyclic_state_counts.items())),
+        "k19_miss_cyclic_state_counts": dict(sorted(miss_state_counts.items())),
+        "k19_canonical_depth_counts": {
+            str(k): v for k, v in sorted(cyclic_depth_counts.items())
+        },
+        "top_k19_canonical_atom_patterns": [
+            {"atoms": pattern, "count": count}
+            for pattern, count in canonical_atom_counts.most_common(40)
+        ],
         "top_factor_residue_patterns": [
             {"pattern": pattern, "count": count}
             for pattern, count in residue_pattern_counts.most_common(40)
         ],
         "examples_by_hit_class": dict(examples),
         "forward_search_stats": search_result["stats"],
+        "k19_state_theorem": {
+            "reachable_states": len(distance),
+            "combined_miss_states": sum(
+                k19state.is_combined_miss(*state) for state in distance
+            ),
+            "max_canonical_miss_atoms": max(
+                distance[state]
+                for state in distance
+                if k19state.is_combined_miss(*state)
+            ),
+        },
         "claim_boundary": (
-            "All rows are exact finite q23 Type-I-only branch candidates.  Any "
-            "observed k19 pattern is a theorem candidate only until separately "
-            "proved; counterexamples must be preserved."
+            "All rows are exact finite q23 Type-I-only branch candidates.  The "
+            "cyclic-state projection is exact, but finite frontier frequencies and "
+            "absences remain theorem-hunting evidence only."
         ),
     }
 
 
 def self_test() -> int:
-    # The 30M grade must include the two known full ----- q23 Type-I-only
-    # witnesses, one from each q23 rescue class.
     result = analyze(30_000_000, "----", None, 0)
     misses = {
         row["p"]
         for row in result["examples_by_hit_class"].get("miss", [])
     }
-    # Examples are capped, so verify by a direct exact known-witness path too.
     for p in (18_766_609, 27_211_969):
         M = (p + 23) // 24
         branch = rescue.q23_branch(M)
@@ -188,7 +258,22 @@ def self_test() -> int:
             raise SystemExit(f"known p={p}: k19 is not an exact miss")
     if result["k19_misses"] < 2:
         raise SystemExit("30M frontier failed to recover at least two k19 misses")
-    print(json.dumps({"self_test": "ok", "k19_misses": result["k19_misses"], "example_misses": sorted(misses)}))
+    if result["k19_state_theorem"] != {
+        "reachable_states": 439,
+        "combined_miss_states": 136,
+        "max_canonical_miss_atoms": 3,
+    }:
+        raise SystemExit("k19 exhaustive state theorem metadata changed")
+    print(
+        json.dumps(
+            {
+                "self_test": "ok",
+                "k19_misses": result["k19_misses"],
+                "example_misses": sorted(misses),
+                "cyclic_states": result["k19_cyclic_state_counts"],
+            }
+        )
+    )
     return 0
 
 
