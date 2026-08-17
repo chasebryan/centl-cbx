@@ -46,6 +46,8 @@ typedef struct {
     brec_u128 obstructive;
     brec_u128 up_plus_minus;
     brec_u128 down_minus_plus;
+    brec_u128 prime_coprime_shortcuts;
+    brec_u128 prime_mod_checks;
 } brec_totals_t;
 
 static uint64_t brec_parse_u64(const char *name, const char *text) {
@@ -142,13 +144,24 @@ static int brec_dfs_box_two(const fac_t *f, int i, uint64_t val, uint64_t mod,
     return 0;
 }
 
-static int brec_delta_zero(const fac_t *f, uint64_t C, uint64_t k) {
-    if (k < 2 || gcd64(C, k) != 1) return 0;
-    uint64_t cinv = inv_mod(C % k, k);
-    uint64_t four_inv = inv_mod(4 % k, k);
-    if (!cinv || !four_inv) return 0;
+/*
+ * Admissible Lane-I target collapse.
+ *
+ * For C=(p+k)/4 with gcd(p,k)=1 and odd k,
+ *
+ *     4C == p (mod k),
+ *     -4^{-1} C^{-1} == -p^{-1} (mod k).
+ *
+ * Also gcd(C,k)=1 follows from gcd(p,k)=1 because any common divisor of C
+ * and k divides p=4C-k.  Thus an admitted stage needs only one inverse, of p
+ * modulo k, and the two exact signed-box targets are {-1,-p^{-1}}.
+ */
+static int brec_delta_zero_admissible(const fac_t *f, uint64_t p, uint64_t k) {
+    if (k < 2) return 0;
+    uint64_t pinv = inv_mod(p % k, k);
+    if (!pinv) return 0;
     uint64_t target_a = k - 1;
-    uint64_t target_b = (k - mul_mod(four_inv, cinv, k)) % k;
+    uint64_t target_b = (k - pinv) % k;
     return brec_dfs_box_two(f, 0, 1 % k, k, target_a, target_b);
 }
 
@@ -209,8 +222,10 @@ static int brec_self_test(void) {
             factor64(C, &a);
             brec_factor64(C, &b);
             if (!brec_same_fac(&a, &b)) die("BREC Lane-I factor self-test failed");
-            if (delta_zero(&a, C, k) != brec_delta_zero(&b, C, k))
-                die("BREC dual-target delta self-test failed at p=%" PRIu64 " k=%" PRIu64, p, k);
+            if (gcd64(C, k) != 1)
+                die("BREC admissible gcd identity self-test failed at p=%" PRIu64 " k=%" PRIu64, p, k);
+            if (delta_zero(&a, C, k) != brec_delta_zero_admissible(&b, p, k))
+                die("BREC collapsed-target delta self-test failed at p=%" PRIu64 " k=%" PRIu64, p, k);
         }
     }
 
@@ -299,6 +314,7 @@ int main(int argc, char **argv) {
             while (p <= seg_hi) {
                 if (p >= 2 && is_prime64(p)) {
                     int spectrum = spectrum_of(p);
+                    int p_exceeds_grade = p > K;
                     total.hard_primes++;
 
                     char *history = NULL;
@@ -321,7 +337,16 @@ int main(int argc, char **argv) {
                     for (uint64_t k = 3; k <= K; k += 4) {
                         total.stages++;
                         int stage_defined = 1;
-                        if (gcd64(k, p) != 1 || p > UINT64_MAX - k) stage_defined = 0;
+                        if (p > UINT64_MAX - k) {
+                            stage_defined = 0;
+                        } else if (p_exceeds_grade) {
+                            /* Prime p cannot divide any positive k <= K < p. */
+                            total.prime_coprime_shortcuts++;
+                        } else {
+                            /* p is prime, so gcd(k,p)=1 iff k mod p != 0. */
+                            total.prime_mod_checks++;
+                            if (k % p == 0) stage_defined = 0;
+                        }
 
                         if (!stage_defined) {
                             total.undefined++;
@@ -334,7 +359,7 @@ int main(int argc, char **argv) {
                             uint64_t C = (p + k) / 4;
                             fac_t f;
                             brec_factor64(C, &f);
-                            int hit = brec_delta_zero(&f, C, k);
+                            int hit = brec_delta_zero_admissible(&f, p, k);
                             int minus = !hit;
 
                             total.defined++;
@@ -403,6 +428,7 @@ int main(int argc, char **argv) {
 
     char hard_s[64], stage_s[64], defined_s[64], undefined_s[64];
     char plus_s[64], minus_s[64], up_s[64], down_s[64];
+    char shortcut_s[64], modcheck_s[64];
     brec_u128_decimal(total.hard_primes, hard_s);
     brec_u128_decimal(total.stages, stage_s);
     brec_u128_decimal(total.defined, defined_s);
@@ -411,6 +437,8 @@ int main(int argc, char **argv) {
     brec_u128_decimal(total.obstructive, minus_s);
     brec_u128_decimal(total.up_plus_minus, up_s);
     brec_u128_decimal(total.down_minus_plus, down_s);
+    brec_u128_decimal(total.prime_coprime_shortcuts, shortcut_s);
+    brec_u128_decimal(total.prime_mod_checks, modcheck_s);
 
     uint64_t formal_nonempty = (((uint64_t)1) << (order + 1)) - 2;
     uint64_t formal_with_epsilon = formal_nonempty + 1;
@@ -426,10 +454,14 @@ int main(int argc, char **argv) {
            "\"undefined_stages\":%s,\"constructive\":%s,\"obstructive\":%s,"
            "\"cross\":{\"right_plus\":%s,\"left_minus\":%s,"
            "\"up_plus_minus\":%s,\"down_minus_plus\":%s},"
+           "\"optimization\":{\"prime_coprime_shortcuts\":%s,"
+           "\"prime_mod_checks\":%s,\"targets\":\"-1,-p^-1\","
+           "\"signed_box_traversals_per_defined_stage\":1},"
            "\"histories_recorded\":%s,\"motifs\":[",
            VERSION, lo, hi, K, order, segment, formal_nonempty, formal_with_epsilon,
            hard_s, stage_s, defined_s, undefined_s, plus_s, minus_s,
-           plus_s, minus_s, up_s, down_s, histories_path ? "true" : "false");
+           plus_s, minus_s, up_s, down_s, shortcut_s, modcheck_s,
+           histories_path ? "true" : "false");
 
     int first = 1;
     char word[17];
