@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Cross-coordinate obligation and contradiction-core analyzer for h169.
 
-This is the next layer above ``propagate_h169_dependency_state.py``.  The base
-h169 dependency grammar is treated as a landed exact background relation.  We
+This is the next layer above ``propagate_h169_dependency_state.py``. The base
+h169 dependency grammar is treated as a landed exact background relation. We
 then tensor it with the k11 ancestry coordinate
 
     t11 = t mod11 in {0,2,3,4,8}
@@ -18,12 +18,13 @@ Two exact cross-coordinate theorem atoms are compiled:
      prime divisor of R to be 1 mod19 while 11 mod19 is 11.
 
 The other inherited k11 phases may carry theorem-verified local resource
-certificates without becoming new Boolean grammar dimensions.  In particular,
-t11 == 2 forces literal factor11 at k43; the exact seeded q43 automaton then
-supplies a finite Type-II-miss closure and NR-valuation budget.
+certificates without becoming new Boolean grammar dimensions. In particular,
+t11 == 2 forces literal factor11 at k43 and contracts the exact q43 miss
+closure, while t11 == 0 forces literal factor11 at k51 and enters an exact
+composite Jacobi shield.
 
 For a contradictory partial state, the tool deletion-minimizes the supplied
-assumptions plus the two cross theorem atoms.  Minimality is relative to the
+assumptions plus the two cross theorem atoms. Minimality is relative to the
 landed base grammar, which remains fixed background proof data.
 """
 
@@ -37,6 +38,7 @@ from typing import Callable, Iterable
 
 import propagate_h169_dependency_state as dep
 import verify_h169_k11_phase_k43_seed as k43seed
+import verify_h169_k11_phase_k51_composite_shield as k51shield
 import verify_k19_nr_valuation_budget as nrbudget
 
 T11_DOMAIN = (0, 2, 3, 4, 8)
@@ -69,7 +71,7 @@ class Atom:
 
 
 def rule_phase_factor11(_route: str, s: CrossState) -> bool:
-    # On h169, T=8+35t.  Thus t=8 mod11 iff T=2 mod11 iff 11|C19.
+    # On h169, T=8+35t. Thus t=8 mod11 iff T=2 mod11 iff 11|C19.
     # The realized route seeds 391 and1081 are coprime to 11, hence 11|R.
     return s.factor11_in_R == (s.t_mod_11 == 8)
 
@@ -150,6 +152,56 @@ def k43_seed_resource() -> dict[str, object]:
         "interpretation": (
             "exact local k43 resource contraction inherited from the k11 phase; "
             "this is not yet a branch-deletion theorem"
+        ),
+    }
+
+
+@lru_cache(maxsize=1)
+def k51_shield_resource() -> dict[str, object]:
+    obj = k51shield.verify()
+    phase = obj["phase"]
+    generic = obj["generic_q51"]
+    seeded = obj["seed11_q51"]
+    contraction = obj["exact_contraction"]
+    shield = obj["jacobi_shield"]
+    cycle = obj["persistent_cycle"]
+    if phase["t_mod_11"] != 0 or phase["forced_shift"] != 51:
+        raise AssertionError("k51 shield theorem phase changed")
+    if phase["consequence"] != "11|C51":
+        raise AssertionError("k51 shield theorem lost factor11 consequence")
+    if seeded["TypeII_miss_states"] != 636:
+        raise AssertionError("seed11 q51 closure changed")
+    if shield["H_order"] != 16 or shield["H_index"] != 2:
+        raise AssertionError("k51 Jacobi shield changed")
+    if cycle["local_factor11_multiplicity_ceiling"] is not None:
+        raise AssertionError("k51 local factor11 ceiling unexpectedly became finite")
+    return {
+        "literal_prime": 11,
+        "destination_shift": 51,
+        "phase": "t mod11=0",
+        "forced_consequence": "11|C51",
+        "generic_TypeII_miss_states": generic["TypeII_miss_states"],
+        "seed11_TypeII_miss_states": seeded["TypeII_miss_states"],
+        "seed11_combined_miss_states": seeded["combined_miss_states"],
+        "seed11_TypeI_only_states": seeded["TypeI_only_states"],
+        "state_ratio": contraction["TypeII_miss_state_ratio"],
+        "states_removed": contraction["states_removed"],
+        "shield_group": shield["H"],
+        "shield_order": shield["H_order"],
+        "shield_index": shield["H_index"],
+        "shield_characterization": shield["H_characterization"],
+        "shield_generator_order": shield["generator_order"],
+        "TypeII_target_outside_shield": shield["jacobi_TypeII_target"] == -1,
+        "TypeI_base_outside_shield": shield["jacobi_TypeI_base"] == -1,
+        "support_saturation_exponent": cycle["saturation_exponent"],
+        "persistent_cycle_length": cycle["cycle_length"],
+        "local_factor11_multiplicity_ceiling": cycle[
+            "local_factor11_multiplicity_ceiling"
+        ],
+        "interpretation": (
+            "exact local k51 state contraction plus a persistent index-two Jacobi "
+            "combined-miss shield; simultaneous cofactor obligations must puncture "
+            "the shield because local k51 geometry cannot"
         ),
     }
 
@@ -294,6 +346,21 @@ def live_obligations(route: str, states: list[CrossState]) -> dict[str, object]:
             "conditional k43 Type-II miss -> exact seed11 closure size 2317",
             "conditional k43 Type-II miss -> Omega_NR(C43)<=14",
         ]
+
+    if forced.get("t_mod_11") == 0:
+        out["k51_composite_shield_obligation"] = k51_shield_resource()
+        out["phase0_chain"] = [
+            "t mod11=0",
+            "T mod11=8",
+            "11|C51",
+            "preload literal residue11 in exact U(51) signed box",
+            "conditional k51 Type-II miss -> exact seed11 closure size 636",
+            "H51=<11>=ker Jacobi(./51) is an index-two combined-miss shield",
+            "pure factor11 support saturates H51 at exponent8",
+            "saturated state cycles with period16",
+            "local factor11 multiplicity has no finite ceiling",
+            "therefore simultaneous cofactor obligations must puncture H51",
+        ]
     return out
 
 
@@ -313,7 +380,7 @@ def analyze(
 
     result: dict[str, object] = {
         "verified_background": True,
-        "analysis": "h169-cross-obligation-core-v2",
+        "analysis": "h169-cross-obligation-core-v3",
         "route": route,
         "input_constraints": {
             field: sorted(values, key=str)
@@ -324,9 +391,10 @@ def analyze(
         "contradiction": not states,
         "claim_boundary": (
             "cross-coordinate explanation over the realized h169 pair-route "
-            "grammar with inherited k11 miss.  The landed base grammar is fixed "
-            "background proof data; core minimality is relative to it.  Local "
-            "resource certificates do not assert arithmetic realization."
+            "grammar with inherited k11 miss. The landed base grammar is fixed "
+            "background proof data; core minimality is relative to it. Local "
+            "resource certificates and persistent residue cycles do not assert "
+            "arithmetic realization by prime corridor candidates."
         ),
     }
 
@@ -346,8 +414,6 @@ def analyze(
 
 
 def self_test() -> None:
-    # Empty query: tensor the landed base grammar with five allowed k11 phases,
-    # then delete BARE exactly on t11=8.
     a = analyze("A", {})
     b = analyze("B", {})
     assert a["base_surviving_formal_tuples"] == 105_600
@@ -355,7 +421,6 @@ def self_test() -> None:
     assert a["cross_surviving_formal_tuples"] == 516_450
     assert b["cross_surviving_formal_tuples"] == 736_950
 
-    # Cross-coordinate branch deletion becomes an exact 4-atom core.
     bad = analyze("B", parse_constraints({"t_mod_11": 8, "k19_mode": "BARE"}))
     assert bad["contradiction"] is True
     core = bad["contradiction_core"]  # type: ignore[index]
@@ -391,11 +456,26 @@ def self_test() -> None:
     assert resource["seed11_max_Omega_NR"] == 14  # type: ignore[index]
     assert resource["positive_NR_edges_inside_seeded_SCCs"] == 0  # type: ignore[index]
 
+    k51 = analyze("B", parse_constraints({"t_mod_11": 0}))
+    assert k51["contradiction"] is False
+    obligations = k51["obligations"]  # type: ignore[index]
+    resource = obligations["k51_composite_shield_obligation"]  # type: ignore[index]
+    assert resource["literal_prime"] == 11  # type: ignore[index]
+    assert resource["destination_shift"] == 51  # type: ignore[index]
+    assert resource["generic_TypeII_miss_states"] == 3337  # type: ignore[index]
+    assert resource["seed11_TypeII_miss_states"] == 636  # type: ignore[index]
+    assert resource["shield_order"] == 16  # type: ignore[index]
+    assert resource["shield_index"] == 2  # type: ignore[index]
+    assert resource["support_saturation_exponent"] == 8  # type: ignore[index]
+    assert resource["persistent_cycle_length"] == 16  # type: ignore[index]
+    assert resource["local_factor11_multiplicity_ceiling"] is None  # type: ignore[index]
+
     other = analyze("B", parse_constraints({"t_mod_11": 4}))
     assert other["contradiction"] is False
     obligations = other["obligations"]  # type: ignore[index]
     assert obligations["forced"]["factor11_in_R"] is False  # type: ignore[index]
     assert "k43_seed_obligation" not in obligations
+    assert "k51_composite_shield_obligation" not in obligations
     assert set(obligations["domains"]["k19_mode"]) == {"BARE", "FULL_QR"}  # type: ignore[index]
 
 
@@ -419,7 +499,7 @@ def main() -> int:
 
     if args.self_test:
         self_test()
-        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v2"}))
+        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v3"}))
         return 0
     if not args.route:
         parser.error("--route is required unless --self-test is used")
