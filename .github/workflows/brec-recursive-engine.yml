@@ -30,11 +30,13 @@ on:
       - 'kernel/src/cbx.c'
       - 'kernel/analyze_brec.py'
       - 'kernel/analyze_brec_cylinder.py'
+      - 'kernel/analyze_brec_target.py'
       - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - 'kernel/BREC-ES-APPLICATION.md'
       - 'kernel/DESIGN-LANGUAGE.md'
       - 'research/BREC-LANE-I-RECURSIVE-CORRIDOR.md'
+      - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
       - '.github/workflows/brec-recursive-engine.yml'
   push:
     branches: [main]
@@ -44,6 +46,7 @@ on:
       - 'kernel/src/cbx.c'
       - 'kernel/analyze_brec.py'
       - 'kernel/analyze_brec_cylinder.py'
+      - 'kernel/analyze_brec_target.py'
       - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - '.github/workflows/brec-recursive-engine.yml'
@@ -88,6 +91,7 @@ jobs:
         run: |
           python3 kernel/analyze_brec.py --self-test
           python3 kernel/analyze_brec_cylinder.py --self-test
+          python3 kernel/analyze_brec_target.py --self-test
 
       - name: Finite reference census
         run: |
@@ -135,6 +139,16 @@ jobs:
             --json \
             > /tmp/brec-k23-cylinder.json
 
+      - name: Trace fixed k23 target through obstruction ancestry
+        if: ${{ fromJSON(env.BREC_I_MAX) >= 23 }}
+        run: |
+          python3 kernel/analyze_brec_target.py \
+            /tmp/brec-histories.tsv \
+            --target-k 23 \
+            --max-prefix-depth 5 \
+            --json \
+            > /tmp/brec-k23-target.json
+
       - name: Validate recursive accounting
         run: |
           python3 - <<'PY'
@@ -172,14 +186,51 @@ jobs:
           if cylinders['max_depth'] >= 6:
               split = next(x for x in cylinders['all_negative_splits'] if x['parent'] == '-----')
               assert split['next_k'] == 23
+
           if obj['i_max'] >= 23:
               cyl = json.loads(Path('/tmp/brec-k23-cylinder.json').read_text())
+              target = json.loads(Path('/tmp/brec-k23-target.json').read_text())
               assert cyl['mode'] == 'analyze-brec-cylinder'
               assert cyl['prefix'] == '-----'
               assert cyl['next_k'] == 23
               assert cyl['binary_children'] == (
                   cyl['constructive_child']['count'] + cyl['obstructive_child']['count']
               )
+              assert target['mode'] == 'analyze-brec-target'
+              assert target['target_k'] == 23
+              assert target['source_primes'] == obj['hard_primes']
+
+              # Frozen finite regression for the canonical 2M development grade.
+              # These are exact census facts only, not universal claims.
+              if obj['hi'] == 2_000_000 and obj['i_max'] >= 23:
+                  ancestry = {row['prefix_depth']: row for row in target['ancestry']}
+                  assert target['first_observed_two_target_coincidence_depth'] == 1
+                  assert ancestry[0]['count'] == 4519
+                  assert ancestry[0]['both'] == 2956
+                  assert ancestry[0]['miss'] == 1561
+                  assert ancestry[0]['type_i_only'] == 2
+                  assert ancestry[0]['type_ii_only'] == 0
+                  assert ancestry[1]['count'] == 2770
+                  assert ancestry[1]['two_target_coincidence'] is True
+                  assert ancestry[1]['type_i_only'] == 0
+                  assert ancestry[1]['type_ii_only'] == 0
+                  assert ancestry[5]['count'] == 237
+                  assert ancestry[5]['both'] == 149
+                  assert ancestry[5]['miss'] == 88
+                  assert ancestry[5]['two_target_coincidence'] is True
+                  assert cyl['constructive_child']['hit_classes'] == [
+                      {'value': 'both', 'count': 149}
+                  ]
+                  assert cyl['obstructive_child']['hit_classes'] == [
+                      {'value': 'miss', 'count': 88}
+                  ]
+                  assert cyl['constructive_child']['full_unit_support'] == 125
+                  assert cyl['obstructive_child']['full_unit_support'] == 0
+                  assert cyl['obstructive_child']['box_support_sizes'] == [
+                      {'value': 11, 'count': 86},
+                      {'value': 19, 'count': 2},
+                  ]
+                  assert cyl['obstructive_child']['common_missing_unit_residues'] == [22]
 
           lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
           assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
@@ -218,6 +269,9 @@ jobs:
           cp /tmp/brec-analysis.json /tmp/brec-artifacts/
           if [ -f /tmp/brec-k23-cylinder.json ]; then
             cp /tmp/brec-k23-cylinder.json /tmp/brec-artifacts/
+          fi
+          if [ -f /tmp/brec-k23-target.json ]; then
+            cp /tmp/brec-k23-target.json /tmp/brec-artifacts/
           fi
 
       - name: Preserve finite BREC census
