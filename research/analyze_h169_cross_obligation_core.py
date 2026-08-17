@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cross-coordinate obligation and contradiction-core analyzer for h169.
 
-The landed h169 dependency grammar is fixed background proof data.  This layer
+The landed h169 dependency grammar is fixed background proof data. This layer
 tensors it with the exact k11 ancestry phase
 
     t11 = t mod11 in {0,2,3,4,8}
@@ -15,14 +15,14 @@ contradiction extraction:
   2. factor11_in_R is incompatible with k19 BARE.
 
 Other phase children carry richer exact resource certificates rather than
-Boolean pruning atoms.  In particular:
+Boolean pruning atoms. In particular:
 
   * t11=2 imports the canonical k43 seeded-shell theorem;
-  * t11=0 imports the canonical k51 Jacobi normal form and its persistent
-    factor11 shield cycle.
+  * t11=0 imports the canonical k51 Jacobi normal form, its persistent
+    factor11 shield cycle, and exact residual support-isolation theorem.
 
 For a contradictory partial state, the analyzer deletion-minimizes supplied
-assumptions plus the cross theorem atoms.  Minimality is relative to the fixed
+assumptions plus the cross theorem atoms. Minimality is relative to the fixed
 landed base grammar.
 """
 
@@ -37,6 +37,7 @@ from typing import Callable, Iterable
 import propagate_h169_dependency_state as dep
 import verify_h169_k11_t0_k51_jacobi_normal_form as k51normal
 import verify_h169_k11_t0_k51_persistent_shield_cycle as k51cycle
+import verify_h169_k11_t0_k51_residual_support_isolation as k51isolation
 import verify_h169_k11_t2_k43_seeded_shell as k43shell
 import verify_k19_nr_valuation_budget as nrbudget
 
@@ -175,6 +176,7 @@ def k43_seed_resource() -> dict[str, object]:
 def k51_normal_form_resource() -> dict[str, object]:
     obj = k51normal.verify()
     cycle = k51cycle.verify_cycle()
+    isolation = k51isolation.verify()
     phase = obj["phase"]
     seed = obj["seed_geometry"]
     full = obj["full_seeded_Type_II_miss_closure"]
@@ -192,10 +194,15 @@ def k51_normal_form_resource() -> dict[str, object]:
         raise AssertionError("canonical k51 necessity theorem changed")
     if cycle["local_v11_ceiling"] is not None:
         raise AssertionError("persistent k51 local v11 ceiling unexpectedly became finite")
+    if isolation["canonical_k51_normal_form"] != obj["mode"]:
+        raise AssertionError("k51 support-isolation theorem lost canonical parent")
+    if isolation["always_coprime_to_R"] != [3, 15, 19, 23, 27, 35, 39, 43, 47, 55]:
+        raise AssertionError("k51 residual unconditional coprime window changed")
 
     return {
         "source_theorem": obj["mode"],
         "persistence_theorem": cycle["mode"],
+        "support_isolation_theorem": isolation["mode"],
         "destination_shift": 51,
         "phase": "t mod11=0",
         "C51_identity": phase["C51_identity"],
@@ -228,10 +235,22 @@ def k51_normal_form_resource() -> dict[str, object]:
         "total_v11_at_H51_saturation": cycle["total_v11_at_H51_saturation"],
         "persistent_cycle_length": cycle["exact_state_period_after_saturation"],
         "local_v11_ceiling": cycle["local_v11_ceiling"],
+        "residual_always_coprime_companions_through_k55": isolation[
+            "always_coprime_to_R"
+        ],
+        "residual_only_possible_shared_prime_support": isolation[
+            "only_possible_shared_prime_support"
+        ],
+        "residual_exact_exception_gcds": isolation["exact_exception_gcds"],
+        "residual_strong_support_consequence": isolation[
+            "strong_support_consequence"
+        ],
         "interpretation": (
-            "exact k51 normal form plus explicit vertical escape carrier: a combined "
-            "miss is exactly residual H51 support, while repeated factor11 reaches "
-            "an exact period-16 H51 cycle; global ancestry must puncture the shield"
+            "exact k51 normal form plus explicit vertical escape carrier and "
+            "support isolation: a combined miss is exactly residual H51 support; "
+            "repeated factor11 reaches a period-16 H51 cycle; and every residual "
+            "prime other than 5 or11 is private to C51 through k55.  Global "
+            "ancestry must puncture the shield through character/phase coupling."
         ),
     }
 
@@ -388,7 +407,10 @@ def live_obligations(route: str, states: list[CrossState]) -> dict[str, object]:
             "four further factor11 copies saturate H51 (total v11=5)",
             "saturated exact state cycles with period16",
             "local v11 has no finite ceiling",
-            "global simultaneous cofactor obligations must puncture H51",
+            "R is coprime to C3,C15,C19,C23,C27,C35,C39,C43,C47,C55",
+            "only residual overlap channels through k55 are 11 with C7 and 5 with C11/C31",
+            "every residual prime q not in {5,11} is private to C51 through k55",
+            "global simultaneous character/phase obligations must puncture H51",
         ]
     return out
 
@@ -409,7 +431,7 @@ def analyze(
 
     result: dict[str, object] = {
         "verified_background": True,
-        "analysis": "h169-cross-obligation-core-v4",
+        "analysis": "h169-cross-obligation-core-v5",
         "route": route,
         "input_constraints": {
             field: sorted(values, key=str)
@@ -420,10 +442,10 @@ def analyze(
         "contradiction": not states,
         "claim_boundary": (
             "Cross-coordinate explanation over the realized h169 pair-route grammar "
-            "with inherited k11 miss.  The landed base grammar is fixed background "
-            "proof data; core minimality is relative to it.  Imported local normal "
-            "forms, resource bounds, and persistence cycles do not assert arithmetic "
-            "realization by prime corridor candidates."
+            "with inherited k11 miss. The landed base grammar is fixed background "
+            "proof data; core minimality is relative to it. Imported local normal "
+            "forms, support-isolation laws, resource bounds, and persistence cycles "
+            "do not assert arithmetic realization by prime corridor candidates."
         ),
     }
 
@@ -488,6 +510,8 @@ def self_test() -> None:
     obligations = k51["obligations"]  # type: ignore[index]
     resource = obligations["k51_jacobi_obligation"]  # type: ignore[index]
     assert resource["source_theorem"] == "h169-k11-t0-k51-jacobi-normal-form"  # type: ignore[index]
+    assert resource["persistence_theorem"] == "h169-k11-t0-k51-persistent-shield-cycle"  # type: ignore[index]
+    assert resource["support_isolation_theorem"] == "h169-k11-t0-k51-residual-support-isolation"  # type: ignore[index]
     assert resource["forced_factor_occurrences"] == [5, 11]  # type: ignore[index]
     assert resource["seed55_TypeII_miss_states"] == 86  # type: ignore[index]
     assert resource["seed55_combined_miss_states"] == 26  # type: ignore[index]
@@ -497,6 +521,8 @@ def self_test() -> None:
     assert resource["total_v11_at_H51_saturation"] == 5  # type: ignore[index]
     assert resource["persistent_cycle_length"] == 16  # type: ignore[index]
     assert resource["local_v11_ceiling"] is None  # type: ignore[index]
+    assert resource["residual_always_coprime_companions_through_k55"] == [3,15,19,23,27,35,39,43,47,55]  # type: ignore[index]
+    assert resource["residual_only_possible_shared_prime_support"] == {"C7": [11], "C11": [5], "C31": [5]}  # type: ignore[index]
 
     other = analyze("B", parse_constraints({"t_mod_11": 4}))
     assert other["contradiction"] is False
@@ -527,7 +553,7 @@ def main() -> int:
 
     if args.self_test:
         self_test()
-        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v4"}))
+        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v5"}))
         return 0
     if not args.route:
         parser.error("--route is required unless --self-test is used")
