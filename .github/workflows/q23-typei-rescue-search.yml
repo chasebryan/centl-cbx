@@ -1,0 +1,98 @@
+name: q23 Type-I rescue branch search
+
+on:
+  workflow_dispatch:
+    inputs:
+      p_hi:
+        description: Prime ceiling for the forward rescue-branch scan
+        required: true
+        default: '100000000'
+        type: string
+      prefix:
+        description: Required anchored BREC prefix through k19
+        required: true
+        default: '-----'
+        type: string
+      max_results:
+        description: Stop after this many emitted witnesses, 0 means unlimited
+        required: true
+        default: '25'
+        type: string
+  pull_request:
+    paths:
+      - 'research/search_q23_typei_rescue_branch.py'
+      - 'research/verify_k3_brec_obstruction_normal_form.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k15_brec_obstruction_normal_form.py'
+      - '.github/workflows/q23-typei-rescue-search.yml'
+
+jobs:
+  exact-forward-search:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      SEARCH_P_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.p_hi || '30000000' }}
+      SEARCH_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.prefix || '-----' }}
+      SEARCH_MAX_RESULTS: ${{ github.event_name == 'workflow_dispatch' && inputs.max_results || '25' }}
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile branch search and exact helpers
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/search_q23_typei_rescue_branch.py \
+            research/verify_k3_brec_obstruction_normal_form.py \
+            research/verify_k7_brec_obstruction_normal_form.py \
+            research/verify_k11_brec_obstruction_normal_form.py \
+            research/verify_k15_brec_obstruction_normal_form.py
+
+      - name: Self-test known q23 rescue witnesses
+        run: python3 research/search_q23_typei_rescue_branch.py --self-test
+
+      - name: Run forward exact rescue-branch search
+        run: |
+          python3 research/search_q23_typei_rescue_branch.py \
+            --p-hi "$SEARCH_P_HI" \
+            --require-prefix "$SEARCH_PREFIX" \
+            --max-results "$SEARCH_MAX_RESULTS" \
+            --json \
+            > /tmp/q23-rescue-search.json
+
+      - name: Validate search accounting
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/q23-rescue-search.json').read_text())
+          assert obj['mode'] == 'search-q23-typei-rescue-branch'
+          assert obj['required_prefix'] == os.environ['SEARCH_PREFIX']
+          assert obj['hard_M_mod35'] == [1, 6, 8, 13, 16, 23]
+          for row in obj['results']:
+              assert row['early_history'].startswith(obj['required_prefix'])
+              assert row['k23']['hit_class'] == 'type-I-only'
+              assert row['D_class_mod_23'] in (5, 14)
+              assert row['D_Omega'] == 2
+
+          # Canonical PR grade must rediscover both known full ----- rescue classes.
+          if int(os.environ['SEARCH_P_HI']) == 30_000_000 and os.environ['SEARCH_PREFIX'] == '-----':
+              ps = {row['p'] for row in obj['results']}
+              assert 18_766_609 in ps
+              assert 27_211_969 in ps
+              branches = {row['D_class_mod_23'] for row in obj['results']}
+              assert {5, 14}.issubset(branches)
+          PY
+
+      - name: Preserve forward-search result
+        uses: actions/upload-artifact@v4
+        with:
+          name: q23-typei-rescue-search-${{ env.SEARCH_P_HI }}
+          path: /tmp/q23-rescue-search.json
+          if-no-files-found: error
+          retention-days: 30
