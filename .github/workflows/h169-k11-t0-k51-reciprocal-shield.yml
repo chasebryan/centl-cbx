@@ -64,7 +64,7 @@ jobs:
               'k51 combined miss iff every prime divisor of C51 is a quadratic residue modulo p'
           )
           assert obj['prime_relative_bridge']['regression_examples'] == 5
-          assert obj['prime_relative_bridge']['residual_prime_checks'] == 6
+          assert obj['prime_relative_bridge']['residual_prime_checks'] == 7
           PY
 
       - name: Preserve exact proof object
