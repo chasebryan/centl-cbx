@@ -7,8 +7,10 @@ on:
       - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k23_typei_only_integer_normal_form.py'
       - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
+      - 'research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md'
       - '.github/workflows/k23-brec-companion.yml'
   push:
     branches: [main]
@@ -17,6 +19,7 @@ on:
       - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k23_typei_only_integer_normal_form.py'
       - '.github/workflows/k23-brec-companion.yml'
 
 jobs:
@@ -35,7 +38,8 @@ jobs:
             kernel/analyze_brec_cylinder.py \
             research/verify_k3_brec_obstruction_normal_form.py \
             research/verify_k23_typei_companion_patterns.py \
-            research/verify_k23_brec_ancestry_falsifiers.py
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_k23_typei_only_integer_normal_form.py
 
       - name: Verify exact k3 obstruction normal form
         run: |
@@ -52,6 +56,11 @@ jobs:
           python3 research/verify_k23_brec_ancestry_falsifiers.py \
             > /tmp/k23-ancestry-falsifiers.json
 
+      - name: Verify Type-I-only integer normal form
+        run: |
+          python3 research/verify_k23_typei_only_integer_normal_form.py \
+            > /tmp/k23-integer-normal-form.json
+
       - name: Validate exact conclusions
         run: |
           python3 - <<'PY'
@@ -61,6 +70,7 @@ jobs:
           k3 = json.loads(Path('/tmp/k3-obstruction-normal-form.json').read_text())
           patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
           falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
+          normal = json.loads(Path('/tmp/k23-integer-normal-form.json').read_text())
 
           assert k3['verified'] is True
           assert k3['combined_target'] == 2
@@ -84,8 +94,25 @@ jobs:
           assert falsifiers['deep_rescue_patterns_realized'] == ['5^2', '14^2']
           witnesses = {w['p']: w for w in falsifiers['witnesses']}
           assert witnesses[5151841]['early_history'] == '-++-+'
+          assert witnesses[5151841]['q23_nonresidue_pattern'] == '5^2'
           assert witnesses[18766609]['early_history'] == '-----'
           assert witnesses[27211969]['early_history'] == '-----'
           assert witnesses[18766609]['k23']['hit_class'] == 'type-I-only'
           assert witnesses[27211969]['k23']['hit_class'] == 'type-I-only'
+
+          assert normal['verified'] is True
+          assert normal['full_five_miss_branches_realized'] == [5, 14]
+          assert normal['predecessor_block'] == [
+              '6T-5', '6T-4', '6T-3', '6T-2', '6T-1', '6T'
+          ]
+          hard = {row['p_mod_840']: row['T_mod_35'] for row in normal['hard_class_map']}
+          assert hard == {1: 1, 121: 6, 169: 8, 289: 13, 361: 16, 529: 23}
+          local = {row['rho']: row for row in normal['local_branches']}
+          assert local[5]['type_I_target'] == 11
+          assert local[14]['type_I_target'] == 21
+          normal_witnesses = {w['p']: w for w in normal['witnesses']}
+          assert normal_witnesses[5151841]['rho'] == 5
+          assert normal_witnesses[8243281]['rho'] == 14
+          assert normal_witnesses[18766609]['early_history'] == '-----'
+          assert normal_witnesses[27211969]['early_history'] == '-----'
           PY
