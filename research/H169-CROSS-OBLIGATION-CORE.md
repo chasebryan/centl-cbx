@@ -1,6 +1,6 @@
 # h169 cross-coordinate obligation core
 
-**Status:** exact explanation layer over the landed h169 pair-route grammar  
+**Status:** exact explanation layer over the landed h169 pair-route grammar, revision 2  
 **Date:** 2026-08-17  
 **Analyzer:** `analyze_h169_cross_obligation_core.py`  
 **New coordinate:** `t mod11` inherited from the exact h169 k11 miss theorem
@@ -29,11 +29,13 @@ factor11_in_R.
 
 This allows an earlier k11 obstruction to collide directly with the later k19 residual-support grammar.
 
+Revision 2 also lets a phase carry an exact downstream **resource certificate** even when no branch-deletion theorem is available. The first such certificate is the forced factor11 seed at k43 on `t11=2`.
+
 ---
 
 ## 2. Two cross-coordinate theorem atoms
 
-The layer compiles exactly two new theorem atoms.
+The contradiction layer compiles exactly two theorem atoms.
 
 ### Phase-to-reservoir theorem
 
@@ -160,7 +162,7 @@ Route A: 528,000
 Route B: 739,500.
 ```
 
-The new cross-coordinate rule deletes BARE exactly on the `t11=8` slice, leaving
+The cross-coordinate rule deletes BARE exactly on the `t11=8` slice, leaving
 
 ```text
 Route A: 516,450
@@ -169,13 +171,13 @@ Route B: 736,950.
 
 These are formal grammar counts only. They are not arithmetic survivor counts or densities.
 
-The significance is not the percentage reduction. It is that the reduction comes from a **different predecessor coordinate** and therefore demonstrates real simultaneous-state coupling.
+The significance is not the percentage reduction. It is that the reduction comes from a different predecessor coordinate and therefore demonstrates real simultaneous-state coupling.
 
 ---
 
-## 5. A live phase carries both mode and valuation obligations
+## 5. One phase now carries a mode deletion and valuation contraction
 
-Query only
+Query
 
 ```text
 t mod11=8.
@@ -206,11 +208,78 @@ vertical resource restriction:
     NR valuation budget <=2.
 ```
 
-This is the first explicit machine object in this line of work where an ancestry phase simultaneously contracts a symbolic mode and a valuation budget.
+The generic unseeded h169 k19 budget is 8, so the same ancestry phase simultaneously deletes a mode and contracts the remaining NR resource from 8 to 2.
 
 ---
 
-## 6. Why this is the desired architecture
+## 6. A second phase now carries a k43 resource certificate
+
+Revision 2 resolves the previously open `t11=2` child as an exact local-state contraction.
+
+On
+
+```text
+t mod11=2,
+```
+
+we have
+
+```text
+T mod11=1
+```
+
+and
+
+```text
+C43=(p+43)/4=6T+5,
+```
+
+so
+
+```text
+11|C43.
+```
+
+The exact q43 signed-box automaton gives
+
+```text
+unseeded Type-II-miss states: 18,048
+seed11 Type-II-miss states:    2,317
+```
+
+with exact class split
+
+```text
+seed11 combined-miss: 1,217
+seed11 Type-I-only:   1,100.
+```
+
+The weighted miss graph has no positive-NR edge inside an SCC and gives
+
+```text
+unseeded Omega_NR(C43) <=20
+seed11   Omega_NR(C43) <=14.
+```
+
+Therefore a query with
+
+```text
+t mod11=2
+```
+
+now receives a theorem-backed obligation object recording
+
+```text
+11|C43
+state(C43) in exact seed11 q43 closure of size 2317
+Omega_NR(C43)<=14.
+```
+
+This does not delete a route or survivor mode yet because no landed k43 support law has been found that conflicts with the seed11 closure. It is a resource contraction awaiting a simultaneous-state collision.
+
+---
+
+## 7. Why this is the desired architecture
 
 A survivor should not be stored merely as
 
@@ -226,13 +295,14 @@ The proof state is becoming
 phase obligations
 + survivor modes
 + forced rational factors
++ local finite-state certificates
 + support-subgroup laws
 + separated reservoirs
 + valuation budgets
 + affine companion identities.
 ```
 
-Then a contradiction is an unsatisfiable subset of those obligations.
+Then either a contradiction appears immediately, or the surviving state carries a strictly richer and more expensive obligation ledger.
 
 The machine can preserve the smallest current exact reason for death, cluster recurring reasons, and promote recurring core families into theorem-mining targets.
 
@@ -241,7 +311,8 @@ That gives a concrete research loop:
 ```text
 survivor state
 -> obligation accumulation
--> contradiction
+-> state/resource contraction
+-> contradiction when available
 -> irreducible core
 -> recurring core family
 -> human-readable theorem.
@@ -249,7 +320,7 @@ survivor state
 
 ---
 
-## 7. Interface
+## 8. Interface
 
 Self-test:
 
@@ -265,7 +336,7 @@ python3 research/analyze_h169_cross_obligation_core.py \
   --state-json '{"t_mod_11":8,"k19_mode":"BARE"}'
 ```
 
-Live phase ledger:
+Live k19 phase ledger:
 
 ```sh
 python3 research/analyze_h169_cross_obligation_core.py \
@@ -273,47 +344,59 @@ python3 research/analyze_h169_cross_obligation_core.py \
   --state-json '{"t_mod_11":8}'
 ```
 
-The state JSON also accepts the landed base grammar fields, so phase constraints can be combined with k27/k31/k35/k47 mode assumptions.
+Live k43 resource ledger:
+
+```sh
+python3 research/analyze_h169_cross_obligation_core.py \
+  --route A \
+  --state-json '{"t_mod_11":2}'
+```
+
+The state JSON also accepts the landed base grammar fields, so ancestry phase constraints can be intersected with k19/k27/k31/k35/k47 mode assumptions.
 
 ---
 
-## 8. Next collision targets
+## 9. Status of the five k11 phase children
 
-The exact five-way k11 phase partition now points to three especially clean next destinations:
-
-```text
-t11=4 -> factor11 at k35, S7 already deleted
-t11=3 -> factor11 at k39, routed J39+ support theorem active
-t11=8 -> factor11 at k19 now deletes BARE and cuts NR budget to2.
-```
-
-The unresolved children are
+The exact phase partition now reads
 
 ```text
+t11=8 -> factor11 at k19
+           BARE deleted
+           Omega_NR: 8 -> 2
+
+t11=4 -> factor11 at k35
+           existing 3-adic branch structure active
+
+t11=3 -> factor11 at k39
+           existing routed J39+ support theorem active
+
+t11=2 -> factor11 at k43
+           Type-II-miss states: 18048 -> 2317
+           Omega_NR: 20 -> 14
+
 t11=0 -> factor11 at k51
-t11=2 -> factor11 at k43.
+           unresolved composite-modulus child.
 ```
 
-Those should be attacked as **seeded local automata**, not as generic new shift scans.
+The only untouched child of this particular factor11 partition is now k51.
 
-For each destination, ask whether the forced literal factor11 causes
+The k51 target should be attacked as composite unit-group geometry, not by pretending 51 is a prime modulus. A natural exact state space is
 
 ```text
-automatic hit,
-branch deletion,
-smaller miss closure,
-new support character,
-or valuation-budget contraction.
+(Z/51Z)^* ~= (Z/3Z)^* x (Z/17Z)^*.
 ```
 
-If either child collapses, feed the result back into this cross-coordinate grammar as another theorem atom.
+The first question is whether preloading literal residue11 shrinks the complete Type-II-miss closure, creates a character restriction, or produces a finite valuation resource that can collide with the earlier route grammar.
 
 ---
 
-## 9. Claim boundary
+## 10. Claim boundary
 
 The base h169 grammar remains fixed background proof data. The cross-core minimality claim is relative to that background.
 
 The five `t mod11` values are necessary phases under an inherited h169 k11 miss; the analyzer does not assert every phase has an arithmetic realization.
 
-Formal tuple counts are not prime counts. No finite Lane-I ceiling or Erdős–Straus proof follows from this module alone.
+The k43 certificate is a complete abstract local automaton result conditional on the phase and a k43 Type-II miss. It does not assert every seed11 state is arithmetically realized.
+
+Formal tuple counts are not prime counts. No finite Lane-I ceiling or Erdős-Straus proof follows from this module alone.
