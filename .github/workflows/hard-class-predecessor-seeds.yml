@@ -9,8 +9,10 @@ on:
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
       - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_h289_k19_quotient_normal_form.py'
       - 'research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md'
       - 'research/H169-H289-H529-K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/H289-K19-QUOTIENT-NORMAL-FORM.md'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
   push:
     branches: [main]
@@ -21,6 +23,7 @@ on:
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
       - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_h289_k19_quotient_normal_form.py'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
 
 jobs:
@@ -41,7 +44,8 @@ jobs:
             research/verify_k11_brec_obstruction_normal_form.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
             research/verify_hard_class_predecessor_forced_seeds.py \
-            research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py
+            research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
+            research/verify_h289_k19_quotient_normal_form.py
 
       - name: Verify hard-class seed reductions
         run: |
@@ -53,6 +57,11 @@ jobs:
           python3 research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
             > /tmp/h169-h289-h529-k11.json
 
+      - name: Verify h289 k19 quotient normal form
+        run: |
+          python3 research/verify_h289_k19_quotient_normal_form.py \
+            > /tmp/h289-k19-quotient.json
+
       - name: Validate exact conclusions
         run: |
           python3 - <<'PY'
@@ -61,6 +70,7 @@ jobs:
 
           obj = json.loads(Path('/tmp/hard-class-predecessor-seeds.json').read_text())
           k11 = json.loads(Path('/tmp/h169-h289-h529-k11.json').read_text())
+          h289 = json.loads(Path('/tmp/h289-k19-quotient.json').read_text())
 
           assert obj['verified'] is True
           assert obj['hard_to_T_mod35'] == {
@@ -106,6 +116,25 @@ jobs:
           for p in (1009, 1129, 3049):
               assert regressions[p]['sign'] == '+'
               assert regressions[p]['all_prime_divisors_QR_mod_11'] is False
+
+          assert h289['verified'] is True
+          assert h289['hard_forcing']['p_mod_840'] == 289
+          assert h289['hard_forcing']['forced_prime'] == 7
+          assert h289['hard_forcing']['forced_support_exponents'] == [0, 6, 12]
+          q = h289['quotient']
+          assert q['quotient_states'] == 9
+          assert q['quotient_combined_miss_states'] == 6
+          assert q['quotient_type_I_only_states'] == 3
+          assert q['full_seeded_states'] == 27
+          assert q['full_combined_miss_states'] == 18
+          assert q['full_type_I_only_states'] == 9
+          assert q['fiber_size'] == 3
+          assert len(q['table']) == 9
+
+          h289_reg = {row['p']: row for row in h289['regressions']}
+          assert h289_reg[1129]['exact_hit_class'] == 'type-I-only'
+          assert h289_reg[8689]['exact_hit_class'] == 'miss'
+          assert h289_reg[22129]['exact_hit_class'] == 'type-II-only'
           PY
 
       - name: Preserve exact seeded-state tables
@@ -115,5 +144,6 @@ jobs:
           path: |
             /tmp/hard-class-predecessor-seeds.json
             /tmp/h169-h289-h529-k11.json
+            /tmp/h289-k19-quotient.json
           if-no-files-found: error
           retention-days: 30
