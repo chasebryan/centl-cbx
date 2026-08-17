@@ -1,0 +1,68 @@
+name: BREC recursive engine
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx.c'
+      - 'kernel/Makefile'
+      - 'kernel/BREC-ES-APPLICATION.md'
+      - 'kernel/DESIGN-LANGUAGE.md'
+      - '.github/workflows/brec-recursive-engine.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx.c'
+      - 'kernel/Makefile'
+      - '.github/workflows/brec-recursive-engine.yml'
+
+jobs:
+  exact-brec:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install build tools
+        run: dnf -y install git gcc make python3
+
+      - uses: actions/checkout@v4
+
+      - name: Build exact BREC engine
+        run: make -C kernel cbx-brec-i
+
+      - name: Reference-equivalence self-test
+        run: kernel/cbx-brec-i --self-test
+
+      - name: Finite recursive census smoke test
+        run: |
+          kernel/cbx-brec-i \
+            --hi 20000 \
+            --i-max 40 \
+            --order 4 \
+            --segment 10000 \
+            --histories /tmp/brec-histories.tsv \
+            > /tmp/brec-summary.json
+
+      - name: Validate BREC accounting
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/brec-summary.json').read_text())
+          assert obj['mode'] == 'brec-I'
+          assert obj['brec_spec'] == 'BREC-v1.0'
+          assert obj['application'] == 'CBX-Lane-I-shift-history-v1'
+          assert obj['order'] == 4
+          assert obj['formal_nonempty_histories_through_order'] == 30
+          assert obj['formal_histories_including_epsilon'] == 31
+          assert obj['constructive'] + obj['obstructive'] == obj['defined_stages']
+          assert obj['defined_stages'] + obj['undefined_stages'] == obj['stages']
+          assert obj['cross']['right_plus'] == obj['constructive']
+          assert obj['cross']['left_minus'] == obj['obstructive']
+          assert obj['motifs']
+
+          lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
+          assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
+          assert len(lines) == obj['hard_primes'] + 1
+          PY
