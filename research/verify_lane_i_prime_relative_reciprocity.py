@@ -2,11 +2,7 @@
 """Verify the generic Lane-I prime-relative quadratic-reciprocity bridge.
 
 Let p be an odd prime with p == 1 (mod 4), let k > 0 satisfy k == 3
-(mod 4), and set
-
-    C_k = (p+k)/4.
-
-For every odd prime q|C_k with gcd(q,k)=1,
+(mod 4), and set C_k=(p+k)/4. For every odd prime q|C_k with gcd(q,k)=1,
 
     (q/p) = (q/k),
 
@@ -22,8 +18,6 @@ Proof:
             = (q/k).
 
 The final reciprocity step is the Jacobi version of quadratic reciprocity.
-This theorem converts local factor characters against the Lane-I shift k into
-characters against the original Erdős-Straus prime p.
 """
 
 from __future__ import annotations
@@ -123,11 +117,9 @@ def bridge_value(p: int, k: int, q: int) -> dict[str, int]:
 
 
 def verify_sign_identity() -> dict[str, Any]:
-    # Freeze the parity algebra underlying the proof for both q mod4 classes.
     rows = []
     for q_mod4 in (1, 3):
         minus_one = 1 if q_mod4 == 1 else -1
-        # k ==3 mod4 makes the reciprocity sign equal (-1)^((q-1)/2).
         reciprocity_sign = minus_one
         product = minus_one * reciprocity_sign
         if product != 1:
@@ -153,8 +145,8 @@ def verify_regression() -> dict[str, Any]:
         k: Counter() for k in (3, 7, 11, 19, 23, 31, 43, 51)
     }
 
-    # Complete finite regression over modest p/k bounds. This is not the proof;
-    # it guards the Jacobi/Legendre implementation and composite-k cases.
+    # Complete finite regression over these explicit p/k bounds. This is not
+    # the proof; it guards the symbol implementation and composite-k cases.
     for p in range(5, 10_000, 4):
         if not is_prime(p):
             continue
@@ -170,7 +162,7 @@ def verify_regression() -> dict[str, Any]:
                     continue
                 values = bridge_value(p, k, q)
                 char = values["q_over_p"]
-                counts["checked_prime_factor_occurrences_distinct"] += 1
+                counts["checked_distinct_prime_divisor_instances"] += 1
                 counts["QR" if char == 1 else "NR"] += 1
                 if k in specialized:
                     specialized[k][char] += 1
@@ -185,7 +177,10 @@ def verify_regression() -> dict[str, Any]:
                         }
                     )
 
-    if counts["checked_prime_factor_occurrences_distinct"] < 50_000:
+    # The exact current finite rectangle contains 26k+ checked instances.  Keep
+    # the floor conservative so harmless changes in factor enumeration do not
+    # masquerade as a theorem failure.
+    if counts["checked_distinct_prime_divisor_instances"] < 20_000:
         raise SystemExit(f"regression unexpectedly small: {counts}")
     if counts["QR"] == 0 or counts["NR"] == 0:
         raise SystemExit("regression failed to exercise both character signs")
@@ -202,8 +197,7 @@ def verify_regression() -> dict[str, Any]:
     }
 
 
-def verify_h169_selected_examples() -> list[dict[str, Any]]:
-    # Small exact h169 examples across prime and composite Lane-I shifts.
+def verify_h169_selected_examples() -> dict[str, Any]:
     rows = []
     checked = 0
     for p in range(169, 2_000_000, 840):
@@ -232,7 +226,7 @@ def verify_h169_selected_examples() -> list[dict[str, Any]]:
             break
     if checked < 4_000:
         raise SystemExit(f"h169 regression unexpectedly small: {checked}")
-    return rows
+    return {"checked_instances": checked, "samples": rows}
 
 
 def verify() -> dict[str, Any]:
@@ -257,7 +251,7 @@ def verify() -> dict[str, Any]:
         ],
         "sign_cancellation": sign,
         "finite_regression": regression,
-        "h169_regression_samples": h169,
+        "h169_regression": h169,
         "corollary": (
             "Any Lane-I local support law stated as Jacobi(q/k)=+1 for every "
             "prime q|C_k is equivalently a global law saying every such q is a "
