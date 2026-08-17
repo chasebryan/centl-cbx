@@ -1,0 +1,112 @@
+name: h169 cross-coordinate obligation cores
+
+on:
+  pull_request:
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/analyze_h169_cross_obligation_core.py'
+      - 'research/H169-CROSS-OBLIGATION-CORE.md'
+      - '.github/workflows/h169-cross-obligation-core.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/analyze_h169_cross_obligation_core.py'
+      - '.github/workflows/h169-cross-obligation-core.yml'
+
+jobs:
+  exact-cross-cores:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile analyzers
+        run: |
+          python3 -m py_compile \
+            research/propagate_h169_dependency_state.py \
+            research/verify_k19_nr_valuation_budget.py \
+            research/analyze_h169_cross_obligation_core.py
+
+      - name: Run cross-core self-test
+        run: python3 research/analyze_h169_cross_obligation_core.py --self-test
+
+      - name: Emit canonical cross contradiction
+        run: |
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route B \
+            --state-json '{"t_mod_11":8,"k19_mode":"BARE"}' \
+            > /tmp/h169-cross-core.json
+
+      - name: Emit live phase-8 obligation ledger
+        run: |
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route A \
+            --state-json '{"t_mod_11":8}' \
+            > /tmp/h169-cross-live.json
+
+      - name: Validate exact explanations
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          bad = json.loads(Path('/tmp/h169-cross-core.json').read_text())
+          live = json.loads(Path('/tmp/h169-cross-live.json').read_text())
+
+          assert bad['analysis'] == 'h169-cross-obligation-core-v1'
+          assert bad['base_surviving_formal_tuples'] == 147900
+          assert bad['cross_surviving_formal_tuples'] == 0
+          assert bad['contradiction'] is True
+          core = bad['contradiction_core']
+          assert core['atom_count'] == 4
+          assert core['minimum_cardinality_claimed'] is False
+          assert core['each_retained_atom_is_necessary'] is True
+          assumptions = {
+              atom['field']: tuple(atom['allowed'])
+              for atom in core['atoms']
+              if atom['kind'] == 'assumption'
+          }
+          assert assumptions == {
+              't_mod_11': (8,),
+              'k19_mode': ('BARE',),
+          }
+          theorems = {
+              atom['name']
+              for atom in core['atoms']
+              if atom['kind'] == 'theorem'
+          }
+          assert theorems == {
+              'h169-k11-phase-factor11-in-R',
+              'k19-bare-excludes-factor11-in-R',
+          }
+
+          assert live['base_surviving_formal_tuples'] == 105600
+          assert live['cross_surviving_formal_tuples'] > 0
+          assert live['contradiction'] is False
+          obligations = live['obligations']
+          assert obligations['forced']['t_mod_11'] == 8
+          assert obligations['forced']['factor11_in_R'] is True
+          assert obligations['forced']['k19_mode'] == 'FULL_QR'
+          factor = obligations['factor11_obligation']
+          assert factor['literal_prime'] == 11
+          assert factor['reservoir'] == 'R'
+          assert factor['k19_BARE_compatible'] is False
+          assert factor['k19_TypeII_miss_max_Omega_NR'] == 2
+          assert factor['positive_NR_edges_inside_seeded_SCCs'] == 0
+          PY
+
+      - name: Preserve explanation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-cross-obligation-core
+          path: |
+            /tmp/h169-cross-core.json
+            /tmp/h169-cross-live.json
+          if-no-files-found: error
+          retention-days: 30
