@@ -1,0 +1,34 @@
+name: Restore broad current frontier
+
+on:
+  push:
+    branches:
+      - research/brec-recursive-engine
+    paths:
+      - '.github/workflows/restore-current-frontier.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/brec-recursive-engine
+          fetch-depth: 0
+
+      - name: Restore CURRENT-FRONTIER from main
+        run: |
+          git fetch origin main
+          git checkout origin/main -- research/CURRENT-FRONTIER.md
+          if git diff --quiet -- research/CURRENT-FRONTIER.md; then
+            echo 'CURRENT-FRONTIER already matches main.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add research/CURRENT-FRONTIER.md
+          git commit -m 'research: restore broad current frontier'
+          git push origin HEAD:research/brec-recursive-engine
