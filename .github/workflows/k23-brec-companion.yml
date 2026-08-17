@@ -8,9 +8,11 @@ on:
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
+      - 'research/verify_k23_rescue_split_hard_classes.py'
       - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
       - 'research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md'
+      - 'research/K23-RESCUE-SPLIT-HARD-CLASS-COMPATIBILITY.md'
       - '.github/workflows/k23-brec-companion.yml'
   push:
     branches: [main]
@@ -20,6 +22,7 @@ on:
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
+      - 'research/verify_k23_rescue_split_hard_classes.py'
       - '.github/workflows/k23-brec-companion.yml'
 
 jobs:
@@ -39,7 +42,8 @@ jobs:
             research/verify_k3_brec_obstruction_normal_form.py \
             research/verify_k23_typei_companion_patterns.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
-            research/verify_k23_typei_only_integer_normal_form.py
+            research/verify_k23_typei_only_integer_normal_form.py \
+            research/verify_k23_rescue_split_hard_classes.py
 
       - name: Verify exact k3 obstruction normal form
         run: |
@@ -61,6 +65,11 @@ jobs:
           python3 research/verify_k23_typei_only_integer_normal_form.py \
             > /tmp/k23-integer-normal-form.json
 
+      - name: Verify rescue split hard-class compatibility
+        run: |
+          python3 research/verify_k23_rescue_split_hard_classes.py \
+            > /tmp/k23-rescue-split-hard-classes.json
+
       - name: Validate exact conclusions
         run: |
           python3 - <<'PY'
@@ -71,6 +80,7 @@ jobs:
           patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
           falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
           normal = json.loads(Path('/tmp/k23-integer-normal-form.json').read_text())
+          split = json.loads(Path('/tmp/k23-rescue-split-hard-classes.json').read_text())
 
           assert k3['verified'] is True
           assert k3['combined_target'] == 2
@@ -115,4 +125,17 @@ jobs:
           assert normal_witnesses[8243281]['rho'] == 14
           assert normal_witnesses[18766609]['early_history'] == '-----'
           assert normal_witnesses[27211969]['early_history'] == '-----'
+
+          assert split['verified'] is True
+          assert split['modulus'] == 805
+          assert split['combinations_verified'] == 24
+          rescue = {row['rho']: row['class_mod_805'] for row in split['rescue_crt_classes']}
+          assert rescue == {5: 281, 14: 106}
+          mult = {row['T_mod_35']: row['m_crt_mod_805'] for row in split['multiplier_classes']}
+          assert mult == {1: 1, 6: 461, 8: 323, 13: 783, 16: 576, 23: 93}
+          combos = {
+              (row['rho'], row['split'], row['hard_p_mod_840'])
+              for row in split['constructions']
+          }
+          assert len(combos) == 24
           PY
