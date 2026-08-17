@@ -4,7 +4,7 @@
 This verifier compares the optimized cbx-brec-i census against the existing
 standalone Lane-I reference census on the same finite domain.
 
-It checks only identities that must hold exactly.  It does not infer a theorem
+It checks only identities that must hold exactly. It does not infer a theorem
 from finite data and does not grant pruning authority to BREC telemetry.
 """
 
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 from typing import Any
 
 
@@ -163,6 +162,36 @@ def verify(standalone: dict[str, Any], brec: dict[str, Any]) -> dict[str, Any]:
     if as_int(cross, "left_minus", "BREC cross") != brec_minus:
         raise SystemExit("BREC Cross left/- total mismatch")
 
+    optimization = brec.get("optimization")
+    if not isinstance(optimization, dict):
+        raise SystemExit("BREC summary: optimization must be an object")
+    shortcuts = as_int(
+        optimization, "prime_coprime_shortcuts", "BREC optimization"
+    )
+    mod_checks = as_int(optimization, "prime_mod_checks", "BREC optimization")
+    if optimization.get("targets") != "-1,-p^-1":
+        raise SystemExit("BREC optimization: collapsed target identity mismatch")
+    traversals = as_int(
+        optimization,
+        "signed_box_traversals_per_defined_stage",
+        "BREC optimization",
+    )
+    if traversals != 1:
+        raise SystemExit(
+            "BREC optimization: expected one signed-box traversal per defined stage"
+        )
+
+    # On ordinary finite research domains p+k cannot approach uint64 overflow.
+    # Then every stage takes exactly one admissibility path: automatic p>K
+    # shortcut or prime-modulus k%p check.
+    if as_int(brec, "hi", "BREC") <= (1 << 63):
+        if shortcuts + mod_checks != brec_stages:
+            raise SystemExit(
+                "BREC optimization accounting mismatch: "
+                f"shortcuts({shortcuts}) + mod_checks({mod_checks}) "
+                f"!= stages({brec_stages})"
+            )
+
     return {
         "verified": True,
         "application": brec["application"],
@@ -177,6 +206,12 @@ def verify(standalone: dict[str, Any], brec: dict[str, Any]) -> dict[str, Any]:
         "constructive": brec_plus,
         "obstructive": brec_minus,
         "constructive_spectrum": spectrum_hits,
+        "optimization": {
+            "prime_coprime_shortcuts": shortcuts,
+            "prime_mod_checks": mod_checks,
+            "targets": optimization["targets"],
+            "signed_box_traversals_per_defined_stage": traversals,
+        },
         "checks": checks,
     }
 
@@ -194,11 +229,14 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, sort_keys=True))
     else:
+        opt = result["optimization"]
         print(
             "BREC exact finite equivalence OK: "
             f"hard={result['hard_primes']} shifts={result['shifts']} "
             f"stages={result['stages']} +={result['constructive']} "
-            f"-={result['obstructive']} ?={result['undefined_stages']}"
+            f"-={result['obstructive']} ?={result['undefined_stages']} "
+            f"coprime-shortcuts={opt['prime_coprime_shortcuts']} "
+            f"mod-checks={opt['prime_mod_checks']}"
         )
     return 0
 
