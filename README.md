@@ -39,7 +39,7 @@ The Bryan Entanglement Compass is the finite eight-ray composite projection. The
 CBX now has an exact Lane-I BREC profiler:
 
 ```sh
-make -C kernel cbx-brec-i
+make -C kernel cbx-brec-i cbx-standalone-i
 kernel/cbx-brec-i --self-test
 kernel/cbx-brec-i --hi 1000000 --i-max 400 --order 4
 ```
@@ -54,15 +54,29 @@ For each defined shift it records
 
 and streams every observed recursive motif through the selected order instead of collapsing a prime to one of eight directions. Default order 4 is already strictly larger than the eight-ray projection.
 
-The application contract and optimization notes are in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md). BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
+The optimized BREC evaluator strips small prime factors before Pollard-rho, collapses the exact targets to `{-1,-p^(-1)}`, evaluates both targets in one signed-box traversal, and avoids inner-loop gcd work when primality/admissibility already determines it. `verify_brec_i.py` cross-checks full finite censuses against the standalone exact Lane-I reference.
+
+Recursive history analysis is available through:
+
+```sh
+python3 kernel/analyze_brec.py \
+  brec-summary.json \
+  --histories brec-histories.tsv
+```
+
+It reports exact finite motif occupancy, next-sign continuation counts, negative-run escape rates, re-entrant histories, deepest first construction, longest obstruction runs, reversal extrema, and spectrum-conditioned summaries.
+
+The GitHub Actions **BREC recursive engine** workflow can also be launched manually with a chosen `hi`, `i_max`, recursion `order`, and segment size. It runs both engines, verifies exact equivalence, analyzes the corpus, and preserves the finite research outputs as an artifact.
+
+The full application contract and optimization derivations are in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md). BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
 
 ## Repository layout
 
 ```text
-kernel/       executable CBX research kernel, BREC engine, and analyzers
+kernel/       executable CBX research kernel, BREC engine, analyzers, verifiers
 research/     exact theorem modules, verifiers, state grammars, frontier notes
 docs/         architecture, migration, and machine contracts
-.github/      CI for kernel and theorem/verifier modules
+.github/      CI and parameterized finite research workflows
 ```
 
 ## Current research direction
@@ -78,7 +92,9 @@ The active program is converting the realized h169 survivor laboratory from a lo
 - later-phase feedback into earlier survivor modes;
 - executable theorem-state propagation;
 - BREC Lane-I recursive motif telemetry beyond the finite Cross/Compass projections;
-- optimized small-prime stripping and one-pass dual-target signed-box evaluation under reference-equivalence self-test.
+- exact finite BREC-versus-standalone equivalence verification;
+- optimized small-prime stripping, collapsed `{-1,-p^(-1)}` targets, and one-pass dual-target signed-box evaluation;
+- parameterized preserved BREC census artifacts for repeatable theorem hunting.
 
 ## Provenance
 
