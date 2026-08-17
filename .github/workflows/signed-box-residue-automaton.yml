@@ -1,0 +1,119 @@
+name: Signed-box residue automaton
+
+on:
+  workflow_dispatch:
+    inputs:
+      modulus:
+        description: Odd prime modulus to classify
+        required: true
+        default: '19'
+        type: string
+      seed:
+        description: Comma-separated forced factor residues
+        required: false
+        default: ''
+        type: string
+      max_states:
+        description: Explicit state-closure safety bound
+        required: true
+        default: '500000'
+        type: string
+  pull_request:
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_h121_k19_brec_obstruction_normal_form.py'
+      - 'research/verify_k23_typei_companion_patterns.py'
+      - '.github/workflows/signed-box-residue-automaton.yml'
+
+jobs:
+  exact-residue-closure:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      AUTO_Q: ${{ github.event_name == 'workflow_dispatch' && inputs.modulus || '19' }}
+      AUTO_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.seed || '' }}
+      AUTO_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.max_states || '500000' }}
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile automaton
+        run: python3 -m py_compile research/classify_signed_box_residue_automaton.py
+
+      - name: Cross-modulus self-test
+        run: python3 research/classify_signed_box_residue_automaton.py --self-test
+
+      - name: Enumerate requested closure
+        shell: bash
+        run: |
+          args=(
+            --modulus "$AUTO_Q"
+            --max-states "$AUTO_MAX"
+            --json
+          )
+          if [[ -n "$AUTO_SEED" ]]; then
+            args+=(--seed "$AUTO_SEED")
+          fi
+          python3 research/classify_signed_box_residue_automaton.py "${args[@]}" \
+            > /tmp/signed-box-residue-automaton.json
+
+      - name: Validate closure accounting
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/signed-box-residue-automaton.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'signed-box-residue-automaton'
+          assert obj['type_II_miss_states'] == (
+              obj['combined_miss_states'] + obj['type_I_only_states']
+          )
+          assert obj['seed_support_size'] >= 1
+          assert obj['transitions_considered'] >= obj['transitions_pruned_after_type_II_hit']
+          PY
+
+      - name: Canonical q23 regression closure
+        run: |
+          python3 research/classify_signed_box_residue_automaton.py \
+            --modulus 23 \
+            --seed 2,3 \
+            --max-states 200000 \
+            --json \
+            > /tmp/q23-residue-automaton.json
+
+      - name: Canonical h121 q19 regression closure
+        run: |
+          python3 research/classify_signed_box_residue_automaton.py \
+            --modulus 19 \
+            --seed 5,7 \
+            --max-states 100000 \
+            --json \
+            > /tmp/h121-q19-residue-automaton.json
+
+      - name: Validate regression conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          q23 = json.loads(Path('/tmp/q23-residue-automaton.json').read_text())
+          h121 = json.loads(Path('/tmp/h121-q19-residue-automaton.json').read_text())
+          assert q23['type_I_only_states'] >= 2
+          assert h121['type_I_only_states'] == 0
+          assert h121['seed_support_size'] == 9
+          PY
+
+      - name: Preserve residue automata
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-box-residue-automaton-q${{ env.AUTO_Q }}
+          path: |
+            /tmp/signed-box-residue-automaton.json
+            /tmp/q23-residue-automaton.json
+            /tmp/h121-q19-residue-automaton.json
+          if-no-files-found: error
+          retention-days: 30
