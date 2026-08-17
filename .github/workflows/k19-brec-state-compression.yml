@@ -1,0 +1,94 @@
+name: k19 BREC cyclic state compression
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k19_brec_state_compression.py'
+      - 'research/K19-BREC-CYCLIC-STATE-COMPRESSION.md'
+      - '.github/workflows/k19-brec-state-compression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k19_brec_state_compression.py'
+      - '.github/workflows/k19-brec-state-compression.yml'
+
+jobs:
+  exact-k19-state:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifier
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_k19_brec_state_compression.py
+
+      - name: Exhaust cyclic state closure
+        run: |
+          python3 research/verify_k19_brec_state_compression.py \
+            > /tmp/k19-state-compression.json
+
+      - name: Validate state theorem
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/k19-state-compression.json').read_text())
+          assert obj['verified'] is True
+          assert obj['modulus'] == 19
+          assert obj['generator'] == 2
+          assert obj['group_order'] == 18
+          assert obj['reachable_states'] == 439
+          assert obj['combined_miss_states'] == 136
+          assert obj['max_canonical_atoms_all_states'] == 4
+          assert obj['max_canonical_atoms_combined_miss'] == 3
+          assert obj['state_depth_histogram'] == {
+              '0': 1, '1': 17, '2': 133, '3': 287, '4': 1
+          }
+          assert obj['miss_depth_histogram'] == {
+              '0': 1, '1': 15, '2': 77, '3': 43
+          }
+          assert obj['miss_support_size_histogram'] == {
+              '1': 1, '3': 16, '5': 19, '7': 20, '9': 42,
+              '11': 8, '13': 15, '15': 14, '17': 1,
+          }
+          assert obj['unique_depth4_state'] == {
+              'c': 0, 'support_size': 18, 'constructive': True
+          }
+          largest = obj['largest_combined_miss_state']
+          assert largest['c'] == 16
+          assert largest['support_size'] == 17
+          assert largest['missing_exponents'] == [9]
+
+          witnesses = {row['p']: row for row in obj['witnesses']}
+          assert witnesses[18766609]['early_history'] == '-----'
+          assert witnesses[18766609]['valuation_atoms'] == [4, 10]
+          assert witnesses[18766609]['combined_miss'] is True
+          assert witnesses[27211969]['early_history'] == '-----'
+          assert witnesses[27211969]['valuation_atoms'] == [8]
+          assert witnesses[27211969]['combined_miss'] is True
+          assert witnesses[8243281]['combined_miss'] is False
+          assert witnesses[5151841]['combined_miss'] is False
+
+          assert len(obj['canonical_miss_states']) == 136
+          assert max(len(row['canonical_atoms']) for row in obj['canonical_miss_states']) == 3
+          PY
+
+      - name: Preserve exact state table
+        uses: actions/upload-artifact@v4
+        with:
+          name: k19-brec-cyclic-state-compression
+          path: /tmp/k19-state-compression.json
+          if-no-files-found: error
+          retention-days: 30
