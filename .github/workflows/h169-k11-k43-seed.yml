@@ -1,0 +1,92 @@
+name: h169 k11 k43 seed contraction
+
+on:
+  pull_request:
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_h169_k11_phase_k43_seed.py'
+      - 'research/H169-K11-PHASE-K43-SEED-CONTRACTION.md'
+      - '.github/workflows/h169-k11-k43-seed.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_h169_k11_phase_k43_seed.py'
+      - 'research/H169-K11-PHASE-K43-SEED-CONTRACTION.md'
+      - '.github/workflows/h169-k11-k43-seed.yml'
+
+jobs:
+  exact-k43-seed-contraction:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: |
+          python3 -m py_compile \
+            research/classify_signed_box_residue_automaton.py \
+            research/verify_h169_k11_future_factor_partition.py \
+            research/verify_h169_k11_phase_k43_seed.py
+
+      - name: Verify exact q43 seed contraction
+        run: |
+          python3 research/verify_h169_k11_phase_k43_seed.py \
+            > /tmp/h169-k11-k43-seed.json
+
+      - name: Validate exact theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k11-k43-seed.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'h169-k11-phase-k43-seed-contraction'
+
+          phase = obj['phase']
+          assert phase['t_mod_11'] == 2
+          assert phase['T_mod_11'] == 1
+          assert phase['forced_factor'] == 11
+          assert phase['forced_shift'] == 43
+          assert phase['consequence'] == '11|C43'
+
+          seed = obj['q43_seed']
+          assert seed['primitive_root'] == 3
+          assert seed['log_g_11'] == 30
+          assert seed['ord_43_11'] == 7
+          assert seed['11_is_QR_mod_43'] is True
+
+          generic = obj['generic_q43']
+          assert generic['TypeII_miss_states'] == 18048
+          assert generic['combined_miss_states'] == 7740
+          assert generic['TypeI_only_states'] == 10308
+          assert generic['NR_budget']['max_NR_valuation'] == 20
+          assert generic['NR_budget']['positive_NR_edges_inside_SCCs'] == 0
+
+          seeded = obj['seed11_q43']
+          assert seeded['TypeII_miss_states'] == 2317
+          assert seeded['combined_miss_states'] == 1217
+          assert seeded['TypeI_only_states'] == 1100
+          assert seeded['NR_budget']['max_NR_valuation'] == 14
+          assert seeded['NR_budget']['positive_NR_edges_inside_SCCs'] == 0
+
+          contraction = obj['exact_contraction']
+          assert contraction['TypeII_miss_state_ratio'] == '2317/18048'
+          assert contraction['states_removed'] == 15731
+          assert contraction['NR_valuation_budget'] == '20->14'
+          assert contraction['NR_budget_drop'] == 6
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-k43-seed-contraction
+          path: /tmp/h169-k11-k43-seed.json
+          if-no-files-found: error
+          retention-days: 30
