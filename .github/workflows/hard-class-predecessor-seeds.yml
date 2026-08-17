@@ -1,0 +1,79 @@
+name: hard-class predecessor forced seeds
+
+on:
+  pull_request:
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - 'research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md'
+      - '.github/workflows/hard-class-predecessor-seeds.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - '.github/workflows/hard-class-predecessor-seeds.yml'
+
+jobs:
+  exact-forced-seeds:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifier
+        run: |
+          python3 -m py_compile \
+            research/classify_signed_box_residue_automaton.py \
+            research/verify_hard_class_predecessor_forced_seeds.py
+
+      - name: Verify hard-class seed reductions
+        run: |
+          python3 research/verify_hard_class_predecessor_forced_seeds.py \
+            > /tmp/hard-class-predecessor-seeds.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/hard-class-predecessor-seeds.json').read_text())
+          assert obj['verified'] is True
+          assert obj['hard_to_T_mod35'] == {
+              '1': 1, '121': 6, '169': 8, '289': 13, '361': 16, '529': 23
+          }
+          rows = {row['p_mod_840']: row for row in obj['classes']}
+
+          assert rows[169]['k11']['seed_residues'] == [3, 5]
+          assert rows[289]['k11']['seed_residues'] == [3, 5]
+          assert rows[529]['k11']['seed_residues'] == [3, 5]
+          for hard in (169, 289, 529):
+              assert rows[hard]['k11']['type_II_miss_states'] == 5
+              assert rows[hard]['k11']['combined_miss_states'] == 5
+              assert rows[hard]['k11']['type_I_only_states'] == 0
+
+          assert rows[1]['k19']['seed_residues'] == [5]
+          assert rows[1]['k19']['type_II_miss_states'] == 64
+          assert rows[121]['k19']['seed_residues'] == [5, 7]
+          assert rows[121]['k19']['type_II_miss_states'] == 9
+          assert rows[121]['k19']['combined_miss_states'] == 9
+          assert rows[121]['k19']['type_I_only_states'] == 0
+          assert rows[169]['k19']['seed_residues'] == []
+          assert rows[169]['k19']['type_II_miss_states'] == 254
+          assert rows[289]['k19']['seed_residues'] == [7]
+          assert rows[289]['k19']['type_II_miss_states'] == 27
+          assert rows[361]['k19']['seed_residues'] == [5]
+          assert rows[529]['k19']['seed_residues'] == []
+          PY
+
+      - name: Preserve exact seeded-state table
+        uses: actions/upload-artifact@v4
+        with:
+          name: hard-class-predecessor-forced-seeds
+          path: /tmp/hard-class-predecessor-seeds.json
+          if-no-files-found: error
+          retention-days: 30
