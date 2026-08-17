@@ -148,7 +148,7 @@ Reversal count is computed only across adjacent defined stages. An undefined sta
 
 ## 6. Optimized exact evaluator
 
-The BREC profiler introduces two exact optimization experiments while retaining the original core as the reference implementation.
+The BREC profiler contains exact optimization experiments while retaining the existing standalone Lane-I engine as the finite reference implementation.
 
 ### Small-prime stripping
 
@@ -156,22 +156,88 @@ Before a residual reaches the shared Miller–Rabin / Pollard-rho factorizer, `c
 
 Lane I visits consecutive values of `C` as `k` advances by 4, so small factors occur frequently. Stripping them before Pollard-rho reduces expensive residual work without changing the factorization.
 
-### Dual-target signed-box traversal
+### Admissible target collapse
 
-The existing `delta_k(C)` test asks whether the same signed box contains either of two exact residues. The reference implementation may traverse the box once for the first residue and again for the second.
+For an admitted Lane-I stage,
 
-The BREC profiler computes both residues first and performs one recursive signed-box traversal whose leaf condition accepts either target.
+```text
+4C = p + k,
+gcd(p,k) = 1.
+```
 
-The profiler self-test compares both optimized operations against the shared exact reference implementation on fixed factorizations and Lane-I samples before finite research runs are admitted by CI.
+Modulo `k`,
 
-These optimizations remain local to `cbx-brec-i` until finite equivalence and benchmark evidence justify promotion into the common kernel.
+```text
+4C = p,
+C = p * 4^(-1).
+```
+
+Therefore
+
+```text
+C^(-1) = 4 * p^(-1),
+-4^(-1) * C^(-1) = -p^(-1)  (mod k).
+```
+
+Also, any common divisor of `C` and `k` divides
+
+```text
+4C - k = p,
+```
+
+so admissibility already implies
+
+```text
+gcd(C,k) = 1.
+```
+
+The two exact signed-box targets can therefore be evaluated directly as
+
+```text
+{-1, -p^(-1)} mod k
+```
+
+with one modular inverse of `p`, rather than separately computing `C^(-1)` and `4^(-1)` and rechecking `gcd(C,k)`.
+
+### One-pass dual-target signed-box traversal
+
+The reference `delta_k(C)` test can traverse the same signed box once for `-1` and again for the Type-I target.
+
+The BREC profiler computes the collapsed pair `{-1,-p^(-1)}` first and performs one recursive signed-box traversal whose leaf condition accepts either exact target.
+
+### Prime admissibility shortcut
+
+Every BREC census target `p` is already proven prime. Thus
+
+```text
+gcd(k,p) = 1  <=>  k mod p != 0.
+```
+
+When `p > K`, every positive shift `k <= K` is automatically coprime to `p`, so the inner loop performs no gcd or modulo test at all. The summary records how many stage checks used this shortcut and how many required a prime-modulus test.
+
+### Reference equivalence
+
+`cbx-brec-i --self-test` compares optimized factorization and collapsed-target evaluation against the shared exact implementation on fixed samples.
+
+For a full finite census, `verify_brec_i.py` compares the optimized BREC engine against `cbx-standalone-i` and requires exact agreement on:
+
+```text
+hard-prime count
+total stage visits
+undefined/coprime skips
+defined factorizations
+constructive hit count
+A/B/C constructive spectrum counts
+```
+
+These optimizations remain local to `cbx-brec-i` until equivalence and benchmark evidence justify promotion into the common kernel.
 
 ## 7. Commands
 
 Build:
 
 ```sh
-make -C kernel cbx-brec-i
+make -C kernel cbx-brec-i cbx-standalone-i
 ```
 
 Self-test exact equivalence:
@@ -200,9 +266,58 @@ kernel/cbx-brec-i \
   > brec-summary.json
 ```
 
+Verify the optimized census against the standalone exact reference:
+
+```sh
+kernel/cbx-standalone-i \
+  --hi 1000000 \
+  --i-max 400 \
+  > standalone-summary.json
+
+python3 kernel/verify_brec_i.py \
+  standalone-summary.json \
+  brec-summary.json
+```
+
+Analyze the recursive structure:
+
+```sh
+python3 kernel/analyze_brec.py \
+  brec-summary.json \
+  --histories brec-histories.tsv
+```
+
+The analyzer reports absent/present motifs through the selected depth, exact next-sign continuation counts, negative-run escape rates, re-entrant histories, deepest first constructive shifts, longest obstructive runs, reversal extrema, and spectrum-conditioned summaries.
+
 Supported recursive motif order is currently `1..16`.
 
-## 8. Research questions opened by this engine
+The GitHub Actions workflow `BREC recursive engine` also supports manual dispatch. A manual run accepts `hi`, `i_max`, `order`, and `segment`, performs both the optimized and reference censuses, verifies exact equivalence, analyzes the histories, and preserves the manifest/results as a workflow artifact.
+
+## 8. Corridor interpretation
+
+The first coordinates of a BREC Lane-I word align exactly with the current fixed-shift corridor:
+
+```text
+coordinate 1 -> k=3
+coordinate 2 -> k=7
+coordinate 3 -> k=11
+coordinate 4 -> k=15
+coordinate 5 -> k=19
+coordinate 6 -> k=23
+...
+```
+
+Thus a prefix such as
+
+```text
+-----+
+```
+
+means exact misses at `3,7,11,15,19` followed by a construction at `23` for that prime. A prefix of all `-` signs is a simultaneous finite corridor obstruction, not a counterexample.
+
+For any grade with `p > K`, every shift is automatically admissible and the observed history is genuinely binary with no `?` stages. This makes high-prime finite corpora especially clean for BREC prefix-cylinder analysis.
+
+## 9. Research questions opened by this engine
 
 The useful questions are now richer than “which k hits most often?” Examples include:
 
@@ -211,12 +326,13 @@ The useful questions are now richer than “which k hits most often?” Examples
 - Do long negative runs cluster by residue class or factor grammar?
 - Does reversal count predict the first constructive depth?
 - Which depth-4 and deeper motifs are absent from large finite corpora?
+- Which negative prefixes survive exactly through `k=19` and how do they split at `k=23`?
 - Do separate histories collapse onto the same exact arithmetic state signature?
 - Can any observed motif exclusion be promoted from finite evidence to a theorem?
 
 The last step is essential. A finite absent motif is a theorem-hunting signal, not a universal exclusion.
 
-## 9. Claim boundary
+## 10. Claim boundary
 
 BREC telemetry does not change the mathematical status of Erdős–Straus.
 
