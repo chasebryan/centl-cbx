@@ -57,9 +57,9 @@ jobs:
       - name: Run forward exact rescue-branch search
         run: |
           python3 research/search_q23_typei_rescue_branch.py \
-            --p-hi "$SEARCH_P_HI" \
-            --require-prefix "$SEARCH_PREFIX" \
-            --max-results "$SEARCH_MAX_RESULTS" \
+            --p-hi="$SEARCH_P_HI" \
+            --require-prefix="$SEARCH_PREFIX" \
+            --max-results="$SEARCH_MAX_RESULTS" \
             --json \
             > /tmp/q23-rescue-search.json
 
