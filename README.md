@@ -61,14 +61,27 @@ Recursive history analysis is available through:
 ```sh
 python3 kernel/analyze_brec.py \
   brec-summary.json \
-  --histories brec-histories.tsv
+  --histories brec-histories.tsv \
+  --prefix-depth 6
 ```
 
-It reports exact finite motif occupancy, next-sign continuation counts, negative-run escape rates, re-entrant histories, deepest first construction, longest obstruction runs, reversal extrema, and spectrum-conditioned summaries.
+It reports exact finite motif occupancy, next-sign continuation counts, anchored prefix cylinders, negative-run escape rates, re-entrant histories, deepest first construction, longest obstruction runs, reversal extrema, and spectrum-conditioned summaries.
 
-The GitHub Actions **BREC recursive engine** workflow can also be launched manually with a chosen `hi`, `i_max`, recursion `order`, and segment size. It runs both engines, verifies exact equivalence, analyzes the corpus, and preserves the finite research outputs as an artifact.
+For the current `k=23` continuation target, compare the exact two children of the anchored `-----` cylinder:
 
-The full application contract and optimization derivations are in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md). BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
+```sh
+python3 kernel/analyze_brec_cylinder.py \
+  brec-histories.tsv \
+  --prefix='-----'
+```
+
+The cylinder analyzer reconstructs `C=(p+23)/4`, factors it exactly, rebuilds the full signed-box support modulo 23, identifies Type-I versus Type-II target hits, measures unit-group saturation, and compares residue/factor structure between `-----+` and `------`.
+
+The theorem-hunting contract for this corridor is documented in [`research/BREC-LANE-I-RECURSIVE-CORRIDOR.md`](research/BREC-LANE-I-RECURSIVE-CORRIDOR.md). The application/optimization derivations live in [`kernel/BREC-ES-APPLICATION.md`](kernel/BREC-ES-APPLICATION.md).
+
+The GitHub Actions **BREC recursive engine** workflow can also be launched manually with a chosen `hi`, `i_max`, recursion `order`, and segment size. Pull requests currently exercise the exact corridor through `p <= 2,000,000`, `k <= 80`, with recursion order 8. The workflow runs both engines, verifies exact equivalence, analyzes the corpus and `k=23` cylinder, and preserves the finite research outputs as an artifact.
+
+BREC annotates what exact arithmetic did. It does not decide whether the arithmetic is true.
 
 ## Repository layout
 
@@ -92,8 +105,10 @@ The active program is converting the realized h169 survivor laboratory from a lo
 - later-phase feedback into earlier survivor modes;
 - executable theorem-state propagation;
 - BREC Lane-I recursive motif telemetry beyond the finite Cross/Compass projections;
+- anchored BREC corridor cylinders that retain absolute shift ancestry;
 - exact finite BREC-versus-standalone equivalence verification;
 - optimized small-prime stripping, collapsed `{-1,-p^(-1)}` targets, and one-pass dual-target signed-box evaluation;
+- exact signed-box reconstruction inside the `k=23` obstruction cylinder;
 - parameterized preserved BREC census artifacts for repeatable theorem hunting.
 
 ## Provenance
