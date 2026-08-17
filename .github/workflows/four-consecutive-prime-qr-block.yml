@@ -1,0 +1,75 @@
+name: four-consecutive prime-QR block
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_lane_i_prime_relative_reciprocity.py'
+      - 'research/verify_four_consecutive_prime_qr_block.py'
+      - 'research/LANE-I-PRIME-RELATIVE-RECIPROCITY.md'
+      - 'research/FOUR-CONSECUTIVE-PRIME-QR-BLOCK.md'
+      - '.github/workflows/four-consecutive-prime-qr-block.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_lane_i_prime_relative_reciprocity.py'
+      - 'research/verify_four_consecutive_prime_qr_block.py'
+      - 'research/LANE-I-PRIME-RELATIVE-RECIPROCITY.md'
+      - 'research/FOUR-CONSECUTIVE-PRIME-QR-BLOCK.md'
+      - '.github/workflows/four-consecutive-prime-qr-block.yml'
+
+jobs:
+  exact-four-block:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifiers
+        run: |
+          python3 -m py_compile \
+            research/verify_lane_i_prime_relative_reciprocity.py \
+            research/verify_four_consecutive_prime_qr_block.py
+
+      - name: Verify exact theorem
+        run: |
+          python3 research/verify_four_consecutive_prime_qr_block.py \
+            > /tmp/four-consecutive-prime-qr-block.json
+
+      - name: Validate theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/four-consecutive-prime-qr-block.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'four-consecutive-prime-qr-block'
+          assert obj['hard_classes_mod_840'] == [169, 289, 529]
+          assert obj['shifts'] == [3, 7, 11, 15]
+          assert obj['consecutive_block']['identity'] == 'C_{3+4j}=X+j for j=0,1,2,3'
+          assert obj['consecutive_block']['vector'] == ['X','X+1','X+2','X+3']
+          assert obj['equivalence'] == (
+              'sigma3=sigma7=sigma11=sigma15=- iff every prime divisor of '
+              'X(X+1)(X+2)(X+3) is a quadratic residue modulo p'
+          )
+          supports = obj['local_Jacobi_plus_support']
+          assert supports['3']['Jacobi_plus_support'] == [1]
+          assert supports['7']['Jacobi_plus_support'] == [1,2,4]
+          assert supports['11']['Jacobi_plus_support'] == [1,3,4,5,9]
+          assert supports['15']['Jacobi_plus_support'] == [1,2,4,8]
+          counts = obj['finite_regression']['counts']
+          assert counts['primes_checked'] >= 1000
+          assert counts['simultaneous_miss'] > 0
+          assert counts['not_simultaneous_miss'] > 0
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: four-consecutive-prime-qr-block
+          path: /tmp/four-consecutive-prime-qr-block.json
+          if-no-files-found: error
+          retention-days: 30
