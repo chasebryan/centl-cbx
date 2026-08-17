@@ -1,0 +1,64 @@
+name: h169 k11 t2 seeded k43 shell
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
+      - 'research/H169-K11-T2-K43-SEEDED-SHELL.md'
+      - '.github/workflows/h169-k11-t2-k43-seeded-shell.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
+      - '.github/workflows/h169-k11-t2-k43-seeded-shell.yml'
+
+jobs:
+  exact-seeded-k43-shell:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+      - uses: actions/checkout@v4
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_h169_k11_t2_k43_seeded_shell.py
+      - name: Verify exact seeded k43 shell
+        run: python3 research/verify_h169_k11_t2_k43_seeded_shell.py > /tmp/h169-k11-t2-k43.json
+      - name: Validate theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('/tmp/h169-k11-t2-k43.json').read_text())
+          assert obj['verified'] is True
+          assert obj['phase']['t_mod_11']==2
+          assert obj['phase']['T_mod_11']==1
+          assert obj['phase']['forced_factor']==11
+          g=obj['q43_generic']; s=obj['q43_seed11']
+          assert (g['type_II_miss_states'],g['combined_miss_states'],g['type_I_only_states'])==(18048,7740,10308)
+          assert (s['type_II_miss_states'],s['combined_miss_states'],s['type_I_only_states'])==(2317,1217,1100)
+          assert g['max_NR_valuation']==20 and s['max_NR_valuation']==14
+          assert g['positive_NR_edges_inside_SCCs']==0
+          assert s['positive_NR_edges_inside_SCCs']==0
+          sh=obj['seed_shell']
+          assert sh['forced_signed_support']==[1,4,11]
+          assert sh['seed11_combined_miss_C_exclusions']==[8,32,42]
+          assert sh['h169_new_excluded_t_mod_43']==9
+          assert obj['one_occurrence_absorbers']['additional_factor_residues_forcing_Type_II']==[32,39,42]
+          w={row['p']:row for row in obj['regressions']}
+          assert w[48049]['k43_hit_class']=='miss'
+          assert w[177409]['k43_hit_class']=='type-II-only'
+          assert w[583969]['k43_hit_class']=='both'
+          assert w[1498729]['k43_hit_class']=='type-I-only'
+          PY
+      - name: Preserve proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-t2-k43-seeded-shell
+          path: /tmp/h169-k11-t2-k43.json
+          if-no-files-found: error
+          retention-days: 30

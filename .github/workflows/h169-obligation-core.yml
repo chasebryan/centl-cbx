@@ -1,0 +1,112 @@
+name: h169 obligation contradiction cores
+
+on:
+  pull_request:
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/H169-DEPENDENCY-PROPAGATOR.md'
+      - 'research/H169-REDUCED-DEPENDENCY-GRAMMAR.md'
+      - 'research/TEN-COFACTOR-ODD-SUPPORT-SEPARATION.md'
+      - 'research/analyze_h169_obligation_core.py'
+      - 'research/H169-OBLIGATION-CORE-HUNTER.md'
+      - '.github/workflows/h169-obligation-core.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/analyze_h169_obligation_core.py'
+      - '.github/workflows/h169-obligation-core.yml'
+
+jobs:
+  exact-obligation-cores:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile analyzers
+        run: |
+          python3 -m py_compile \
+            research/propagate_h169_dependency_state.py \
+            research/analyze_h169_obligation_core.py
+
+      - name: Run obligation-core self-test
+        run: python3 research/analyze_h169_obligation_core.py --self-test
+
+      - name: Emit canonical contradiction core
+        run: |
+          python3 research/analyze_h169_obligation_core.py \
+            --route B \
+            --state-json '{"k19_mode":"BARE","k27_mode":"A"}' \
+            > /tmp/h169-obligation-core.json
+
+      - name: Emit live obligation ledger
+        run: |
+          python3 research/analyze_h169_obligation_core.py \
+            --route B \
+            --state-json '{"k19_mode":"BARE"}' \
+            > /tmp/h169-obligation-live.json
+
+      - name: Validate proof explanations
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          bad = json.loads(Path('/tmp/h169-obligation-core.json').read_text())
+          live = json.loads(Path('/tmp/h169-obligation-live.json').read_text())
+
+          assert bad['analysis'] == 'h169-obligation-core-v1'
+          assert bad['contradiction'] is True
+          core = bad['contradiction_core']
+          assert core['atom_count'] == 4
+          assert core['minimum_cardinality_claimed'] is False
+          assert core['each_retained_atom_is_necessary'] is True
+
+          assumptions = {
+              atom['field']: tuple(atom['allowed'])
+              for atom in core['atoms']
+              if atom['kind'] == 'assumption'
+          }
+          theorems = {
+              atom['name']
+              for atom in core['atoms']
+              if atom['kind'] == 'theorem'
+          }
+          assert assumptions == {
+              'k19_mode': ('BARE',),
+              'k27_mode': ('A',),
+          }
+          assert theorems == {
+              'k19-bare-phase',
+              'k27-phase8-q-selector',
+          }
+
+          assert live['contradiction'] is False
+          obligations = live['obligations']
+          assert obligations['forced_coordinates']['tau19'] == 8
+          assert obligations['forced_coordinates']['k27_mode'] == 'Q'
+          assert (
+              'k27 Q: every prime factor of E is QR mod27'
+              in obligations['required_support_and_character_obligations']
+          )
+          affine = obligations['affine_and_support_obligations']
+          assert affine['C19_seed_S'] == 1081
+          assert affine['C19_seed_factorization'] == '23*47'
+          assert affine['odd_support_separation'] == (
+              'odd parts of R,B,E,D,F,G,H,J,K,L are pairwise coprime'
+          )
+          PY
+
+      - name: Preserve explanation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-obligation-core
+          path: |
+            /tmp/h169-obligation-core.json
+            /tmp/h169-obligation-live.json
+          if-no-files-found: error
+          retention-days: 30

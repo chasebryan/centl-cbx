@@ -1,0 +1,150 @@
+name: h169 cross-coordinate obligation cores
+
+on:
+  pull_request:
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
+      - 'research/analyze_h169_cross_obligation_core.py'
+      - 'research/H169-CROSS-OBLIGATION-CORE.md'
+      - '.github/workflows/h169-cross-obligation-core.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/propagate_h169_dependency_state.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
+      - 'research/analyze_h169_cross_obligation_core.py'
+      - 'research/H169-CROSS-OBLIGATION-CORE.md'
+      - '.github/workflows/h169-cross-obligation-core.yml'
+
+jobs:
+  exact-cross-cores:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile analyzers
+        run: |
+          python3 -m py_compile \
+            research/propagate_h169_dependency_state.py \
+            research/verify_k19_nr_valuation_budget.py \
+            research/verify_h169_k11_future_factor_partition.py \
+            research/verify_h169_k11_t2_k43_seeded_shell.py \
+            research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
+            research/verify_h169_k11_t0_k51_persistent_shield_cycle.py \
+            research/verify_h169_k11_t0_k51_residual_support_isolation.py \
+            research/analyze_h169_cross_obligation_core.py
+
+      - name: Run cross-core self-test
+        run: python3 research/analyze_h169_cross_obligation_core.py --self-test
+
+      - name: Emit canonical contradiction and live obligation ledgers
+        run: |
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route B --state-json '{"t_mod_11":8,"k19_mode":"BARE"}' \
+            > /tmp/h169-cross-core.json
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route A --state-json '{"t_mod_11":8}' \
+            > /tmp/h169-cross-live.json
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route A --state-json '{"t_mod_11":2}' \
+            > /tmp/h169-cross-k43.json
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route B --state-json '{"t_mod_11":0}' \
+            > /tmp/h169-cross-k51.json
+
+      - name: Validate exact explanations
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          bad = json.loads(Path('/tmp/h169-cross-core.json').read_text())
+          live = json.loads(Path('/tmp/h169-cross-live.json').read_text())
+          k43 = json.loads(Path('/tmp/h169-cross-k43.json').read_text())
+          k51 = json.loads(Path('/tmp/h169-cross-k51.json').read_text())
+
+          assert bad['analysis'] == 'h169-cross-obligation-core-v5'
+          assert bad['base_surviving_formal_tuples'] == 147900
+          assert bad['cross_surviving_formal_tuples'] == 0
+          assert bad['contradiction'] is True
+          core = bad['contradiction_core']
+          assert core['atom_count'] == 4
+          assert core['minimum_cardinality_claimed'] is False
+          assert core['each_retained_atom_is_necessary'] is True
+          assert {
+              atom['field'] for atom in core['atoms']
+              if atom['kind'] == 'assumption'
+          } == {'t_mod_11', 'k19_mode'}
+          assert {
+              atom['name'] for atom in core['atoms']
+              if atom['kind'] == 'theorem'
+          } == {
+              'h169-k11-phase-factor11-in-R',
+              'k19-bare-excludes-factor11-in-R',
+          }
+
+          assert live['analysis'] == 'h169-cross-obligation-core-v5'
+          obligations = live['obligations']
+          assert obligations['forced']['t_mod_11'] == 8
+          assert obligations['forced']['factor11_in_R'] is True
+          assert obligations['forced']['k19_mode'] == 'FULL_QR'
+          assert obligations['factor11_obligation']['k19_TypeII_miss_max_Omega_NR'] == 2
+
+          assert k43['analysis'] == 'h169-cross-obligation-core-v5'
+          r = k43['obligations']['k43_seed_obligation']
+          assert r['source_theorem'] == 'h169-k11-t2-k43-seeded-shell'
+          assert r['forced_signed_support'] == [1, 4, 11]
+          assert r['seed11_TypeII_miss_states'] == 2317
+          assert r['seed11_combined_miss_states'] == 1217
+          assert r['seed11_max_Omega_NR'] == 14
+          assert r['additional_factor_residues_forcing_TypeII'] == [32, 39, 42]
+          assert r['combined_miss_excluded_t_mod_43'] == 9
+
+          assert k51['analysis'] == 'h169-cross-obligation-core-v5'
+          r = k51['obligations']['k51_jacobi_obligation']
+          assert r['source_theorem'] == 'h169-k11-t0-k51-jacobi-normal-form'
+          assert r['persistence_theorem'] == 'h169-k11-t0-k51-persistent-shield-cycle'
+          assert r['support_isolation_theorem'] == 'h169-k11-t0-k51-residual-support-isolation'
+          assert r['forced_factor_occurrences'] == [5, 11]
+          assert r['seed55_TypeII_miss_states'] == 86
+          assert r['seed55_combined_miss_states'] == 26
+          assert r['seed55_TypeI_only_states'] == 60
+          assert r['H51_order'] == 16
+          assert r['combined_miss_with_outside_H51_factor'] == 0
+          assert r['combined_miss_allowed_t_mod_17'] == [0, 2, 8, 10, 11, 12, 15, 16]
+          assert r['additional_factor11_occurrences_to_saturate_H51'] == 4
+          assert r['total_v11_at_H51_saturation'] == 5
+          assert r['persistent_cycle_length'] == 16
+          assert r['local_v11_ceiling'] is None
+          assert r['residual_always_coprime_companions_through_k55'] == [3,15,19,23,27,35,39,43,47,55]
+          assert r['residual_only_possible_shared_prime_support'] == {
+              'C7': [11], 'C11': [5], 'C31': [5]
+          }
+          PY
+
+      - name: Preserve explanation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-cross-obligation-core
+          path: |
+            /tmp/h169-cross-core.json
+            /tmp/h169-cross-live.json
+            /tmp/h169-cross-k43.json
+            /tmp/h169-cross-k51.json
+          if-no-files-found: error
+          retention-days: 30

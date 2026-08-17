@@ -1,0 +1,77 @@
+name: h169 k11 t0 k51 Jacobi normal form
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - '.github/workflows/h169-k11-t0-k51-jacobi.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - '.github/workflows/h169-k11-t0-k51-jacobi.yml'
+
+jobs:
+  exact-k51-jacobi-normal-form:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+      - uses: actions/checkout@v4
+      - name: Compile exact verifier
+        run: python3 -m py_compile research/verify_h169_k11_t0_k51_jacobi_normal_form.py
+      - name: Verify exact k51 normal form
+        run: python3 research/verify_h169_k11_t0_k51_jacobi_normal_form.py > /tmp/h169-k11-t0-k51.json
+      - name: Validate theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('/tmp/h169-k11-t0-k51.json').read_text())
+          assert obj['verified'] is True
+          assert obj['phase']['t_mod_11']==0
+          assert obj['phase']['T_mod_11']==8
+          assert obj['phase']['forced_factor_occurrences']==[5,11]
+          seed=obj['seed_geometry']
+          assert seed['H51_size']==16
+          assert seed['H51']==[1,4,5,11,13,14,16,19,20,23,25,29,41,43,44,49]
+          assert seed['seed55_center']==4
+          assert seed['seed55_support']==[1,4,5,11,13,14,19,41,43]
+          full=obj['full_seeded_Type_II_miss_closure']
+          assert full['type_II_miss_states']==86
+          assert full['combined_miss_states']==26
+          assert full['type_I_only_states']==60
+          assert full['max_minimal_residual_factor_occurrences']==3
+          suff=obj['H51_sufficiency']
+          assert suff['H51_only_states']==26
+          assert suff['all_H51_only_states_are_combined_misses'] is True
+          nec=obj['outside_H51_necessity']
+          assert nec['flagged_Type_II_miss_states']==86
+          assert nec['combined_miss_with_no_outside_H51_factor']==26
+          assert nec['combined_miss_with_outside_H51_factor']==0
+          assert nec['type_I_only_with_outside_H51_factor']==60
+          assert nec['one_step_class_split']=={'both':2,'miss':15,'type-I-only':7,'type-II-only':7}
+          phase17=obj['t17_phase_consequence']
+          assert phase17['combined_miss_implies_Legendre_p_mod_17']==1
+          assert phase17['combined_miss_allowed_t_mod_17']==[0,2,8,10,11,12,15,16]
+          assert phase17['prime_admissible_phase_fraction_retained']=='1/2'
+          w={row['p']:row for row in obj['regressions']}
+          assert w[55609]['k51_hit_class']=='miss'
+          assert w[55609]['all_residual_prime_support_in_H51'] is True
+          assert w[64849]['k51_hit_class']=='both'
+          assert w[231169]['k51_hit_class']=='type-I-only'
+          assert w[379009]['k51_hit_class']=='type-II-only'
+          assert all(row['k11_hit_class']=='miss' for row in w.values())
+          PY
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-t0-k51-jacobi-normal-form
+          path: /tmp/h169-k11-t0-k51.json
+          if-no-files-found: error
+          retention-days: 30

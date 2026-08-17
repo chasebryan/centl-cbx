@@ -1,0 +1,170 @@
+name: k19 BREC cyclic state compression
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k19_brec_state_compression.py'
+      - 'research/verify_k19_automaton_equivalence.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - 'research/K19-BREC-CYCLIC-STATE-COMPRESSION.md'
+      - 'research/K19-AUTOMATON-EQUIVALENCE.md'
+      - 'research/K19-NR-VALUATION-BUDGET.md'
+      - '.github/workflows/k19-brec-state-compression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k19_brec_state_compression.py'
+      - 'research/verify_k19_automaton_equivalence.py'
+      - 'research/verify_k19_nr_valuation_budget.py'
+      - '.github/workflows/k19-brec-state-compression.yml'
+
+jobs:
+  exact-k19-state:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifiers
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/classify_signed_box_residue_automaton.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_k19_brec_state_compression.py \
+            research/verify_k19_automaton_equivalence.py \
+            research/verify_k19_nr_valuation_budget.py
+
+      - name: Exhaust cyclic state closure
+        run: |
+          python3 research/verify_k19_brec_state_compression.py \
+            > /tmp/k19-state-compression.json
+
+      - name: Cross-verify independent automata
+        run: |
+          python3 research/verify_k19_automaton_equivalence.py \
+            > /tmp/k19-automaton-equivalence.json
+
+      - name: Verify NR valuation budgets
+        run: |
+          python3 research/verify_k19_nr_valuation_budget.py \
+            > /tmp/k19-nr-valuation-budget.json
+
+      - name: Validate state theorem
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/k19-state-compression.json').read_text())
+          eq = json.loads(Path('/tmp/k19-automaton-equivalence.json').read_text())
+          nr = json.loads(Path('/tmp/k19-nr-valuation-budget.json').read_text())
+
+          assert obj['verified'] is True
+          assert obj['modulus'] == 19
+          assert obj['generator'] == 2
+          assert obj['group_order'] == 18
+          assert obj['reachable_states'] == 439
+          assert obj['combined_miss_states'] == 136
+          assert obj['max_canonical_atoms_all_states'] == 4
+          assert obj['max_canonical_atoms_combined_miss'] == 3
+          assert obj['state_depth_histogram'] == {
+              '0': 1, '1': 17, '2': 133, '3': 287, '4': 1
+          }
+          assert obj['miss_depth_histogram'] == {
+              '0': 1, '1': 15, '2': 77, '3': 43
+          }
+          assert obj['miss_support_size_histogram'] == {
+              '1': 1, '3': 16, '5': 19, '7': 20, '9': 42,
+              '11': 8, '13': 15, '15': 14, '17': 1,
+          }
+          assert obj['unique_depth4_state'] == {
+              'c': 0, 'support_size': 18, 'constructive': True
+          }
+          largest = obj['largest_combined_miss_state']
+          assert largest['c'] == 16
+          assert largest['support_size'] == 17
+          assert largest['missing_exponents'] == [9]
+
+          witnesses = {row['p']: row for row in obj['witnesses']}
+          assert witnesses[18766609]['early_history'] == '-----'
+          assert witnesses[18766609]['valuation_atoms'] == [4, 10]
+          assert witnesses[18766609]['combined_miss'] is True
+          assert witnesses[27211969]['early_history'] == '-----'
+          assert witnesses[27211969]['valuation_atoms'] == [8]
+          assert witnesses[27211969]['combined_miss'] is True
+          assert witnesses[8243281]['combined_miss'] is False
+          assert witnesses[5151841]['combined_miss'] is False
+
+          assert len(obj['canonical_miss_states']) == 136
+          assert max(len(row['canonical_atoms']) for row in obj['canonical_miss_states']) == 3
+
+          assert eq['verified'] is True
+          assert eq['full_reachable_states'] == 439
+          assert eq['type_II_miss_states'] == 254
+          assert eq['combined_miss_states'] == 136
+          assert eq['type_I_only_states'] == 118
+          assert eq['state_sets_identical'] is True
+          assert eq['minimal_depths_identical'] is True
+          assert eq['combined_miss_identities_identical'] is True
+
+          assert nr['verified'] is True
+          assert nr['global_bound'] == 8
+          assert nr['global_bound_arithmetically_sharp'] is True
+          budgets = {tuple(row['seed_residues']): row for row in nr['budgets']}
+          assert budgets[()]['type_II_miss_states'] == 254
+          assert budgets[()]['max_NR_valuation'] == 8
+          assert budgets[(5,)]['max_NR_valuation'] == 6
+          assert budgets[(7,)]['max_NR_valuation'] == 2
+          assert budgets[(5,7)]['max_NR_valuation'] == 0
+          assert budgets[(11,)]['max_NR_valuation'] == 2
+          assert budgets[(7,11)]['max_NR_valuation'] == 2
+          assert all(row['positive_NR_edges_inside_SCCs'] == 0 for row in nr['budgets'])
+
+          atlas = {row['p_mod_840']: row for row in nr['hard_class_atlas']}
+          assert atlas[1]['Type_II_miss_max_Omega_NR'] == 6
+          assert atlas[121]['Type_II_miss_max_Omega_NR'] == 0
+          assert atlas[169]['Type_II_miss_max_Omega_NR'] == 8
+          assert atlas[289]['Type_II_miss_max_Omega_NR'] == 2
+          assert atlas[361]['Type_II_miss_max_Omega_NR'] == 6
+          assert atlas[529]['Type_II_miss_max_Omega_NR'] == 8
+
+          phase = nr['k11_phase_T2_mod11']
+          assert phase['h169_max_Omega_NR'] == 2
+          assert phase['h529_max_Omega_NR'] == 2
+          assert phase['h289_max_Omega_NR'] == 2
+
+          sharp = {row['p']: row for row in nr['sharpness_and_regression_witnesses']}
+          assert sharp[108013]['Omega_NR'] == 8
+          assert sharp[108013]['k19_hit_class'] == 'type-I-only'
+          assert sharp[11896466401]['p_mod_840'] == 1
+          assert sharp[11896466401]['Omega_NR'] == 6
+          assert sharp[93529]['p_mod_840'] == 289
+          assert sharp[93529]['Omega_NR'] == 2
+          assert sharp[6841]['p_mod_840'] == 121
+          assert sharp[6841]['Omega_NR'] == 0
+          assert sharp[1023289]['p_mod_840'] == 169
+          assert sharp[1023289]['Omega_NR'] == 2
+          assert sharp[670849]['p_mod_840'] == 529
+          assert sharp[670849]['Omega_NR'] == 2
+          PY
+
+      - name: Preserve exact state tables
+        uses: actions/upload-artifact@v4
+        with:
+          name: k19-brec-cyclic-state-compression
+          path: |
+            /tmp/k19-state-compression.json
+            /tmp/k19-automaton-equivalence.json
+            /tmp/k19-nr-valuation-budget.json
+          if-no-files-found: error
+          retention-days: 30

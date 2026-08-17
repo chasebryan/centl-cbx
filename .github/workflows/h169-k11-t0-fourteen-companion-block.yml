@@ -1,0 +1,77 @@
+name: h169 k11 t0 fourteen-companion block
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_fourteen_companion_block.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-FOURTEEN-COMPANION-BLOCK.md'
+      - '.github/workflows/h169-k11-t0-fourteen-companion-block.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_fourteen_companion_block.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-FOURTEEN-COMPANION-BLOCK.md'
+      - '.github/workflows/h169-k11-t0-fourteen-companion-block.yml'
+
+jobs:
+  exact-fourteen-block:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: |
+          python3 -m py_compile \
+            research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
+            research/verify_h169_k11_t0_fourteen_companion_block.py
+
+      - name: Verify exact fourteen-companion block
+        run: |
+          python3 research/verify_h169_k11_t0_fourteen_companion_block.py \
+            > /tmp/h169-fourteen-companion-block.json
+
+      - name: Validate exact block certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-fourteen-companion-block.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'h169-k11-t0-fourteen-companion-block'
+          assert obj['canonical_parent'] == 'h169-k11-t0-k51-jacobi-normal-form'
+          assert obj['parameterization'] == {
+              'p': '169+9240u',
+              't': '11u',
+              'R': '1+42u',
+              'C51': '55R',
+          }
+          assert obj['indexing'] == 'k_j=3+4j, 0<=j<=13'
+          assert obj['block_identity'] == 'C_{3+4j}=55R+(j-12)'
+          assert obj['companion_vector'] == [
+              '55R-12','55R-11','55R-10','55R-9','55R-8','55R-7','55R-6',
+              '55R-5','55R-4','55R-3','55R-2','55R-1','55R','55R+1'
+          ]
+          overlap = obj['support_overlap_corollary']
+          assert overlap['gcd_law'] == 'gcd(R,C_{3+4j})=gcd(R,j-12) for j!=12'
+          assert overlap['always_coprime_shifts'] == [3,15,19,23,27,35,39,43,47,55]
+          assert overlap['only_possible_shared_prime_support'] == {
+              'C7': [11], 'C11': [5], 'C31': [5]
+          }
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-t0-fourteen-companion-block
+          path: /tmp/h169-fourteen-companion-block.json
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,89 @@
+name: h169 k11 k51 residual support isolation
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-RESIDUAL-SUPPORT-ISOLATION.md'
+      - '.github/workflows/h169-k11-k51-residual-isolation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-RESIDUAL-SUPPORT-ISOLATION.md'
+      - '.github/workflows/h169-k11-k51-residual-isolation.yml'
+
+jobs:
+  exact-residual-isolation:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: |
+          python3 -m py_compile \
+            research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
+            research/verify_h169_k11_t0_k51_residual_support_isolation.py
+
+      - name: Verify exact support isolation
+        run: |
+          python3 research/verify_h169_k11_t0_k51_residual_support_isolation.py \
+            > /tmp/h169-k51-residual-isolation.json
+
+      - name: Validate exact theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k51-residual-isolation.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'h169-k11-t0-k51-residual-support-isolation'
+          assert obj['canonical_k51_normal_form'] == 'h169-k11-t0-k51-jacobi-normal-form'
+
+          param = obj['parameterization']
+          assert param['t'] == '11u'
+          assert param['R'] == '1+42u'
+          assert param['C51'] == '55R'
+          assert param['R_mod_2'] == 1
+          assert param['R_mod_3'] == 1
+          assert param['R_mod_7'] == 1
+
+          assert obj['always_coprime_to_R'] == [3,15,19,23,27,35,39,43,47,55]
+          assert obj['only_possible_shared_prime_support'] == {
+              'C7': [11],
+              'C11': [5],
+              'C31': [5],
+          }
+          assert obj['exact_exception_gcds']['k7'] == 'gcd(R,C7)=11 iff u mod11=6; otherwise1'
+          assert obj['exact_exception_gcds']['k11'] == 'gcd(R,C11)=5 iff u mod5=2; otherwise1'
+          assert obj['exact_exception_gcds']['k31'] == 'gcd(R,C31)=5 iff u mod5=2; otherwise1'
+
+          compat = obj['character_compatibility_of_exceptions']
+          assert compat['11_is_QR_mod_7'] is True
+          assert compat['5_is_QR_mod_11'] is True
+          assert compat['5_in_H31'] is True
+
+          table = {row['k']: row for row in obj['symbolic_table']}
+          assert table[7]['possible_common_primes_after_R_mod_2_3_7'] == [11]
+          assert table[11]['possible_common_primes_after_R_mod_2_3_7'] == [5]
+          assert table[31]['possible_common_primes_after_R_mod_2_3_7'] == [5]
+          for k in [3,15,19,23,27,35,39,43,47,55]:
+              assert table[k]['possible_common_primes_after_R_mod_2_3_7'] == []
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-k51-residual-support-isolation
+          path: /tmp/h169-k51-residual-isolation.json
+          if-no-files-found: error
+          retention-days: 30

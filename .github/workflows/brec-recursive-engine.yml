@@ -1,0 +1,283 @@
+name: BREC recursive engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      hi:
+        description: Highest integer in the finite prime census
+        required: true
+        default: '2000000'
+        type: string
+      i_max:
+        description: Largest Lane-I shift k
+        required: true
+        default: '80'
+        type: string
+      order:
+        description: Recursive BREC motif order
+        required: true
+        default: '8'
+        type: string
+      segment:
+        description: Finite census segment width
+        required: true
+        default: '250000'
+        type: string
+  pull_request:
+    paths:
+      - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx_standalone_i.c'
+      - 'kernel/src/cbx.c'
+      - 'kernel/analyze_brec.py'
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'kernel/analyze_brec_target.py'
+      - 'kernel/verify_brec_i.py'
+      - 'kernel/Makefile'
+      - 'kernel/BREC-ES-APPLICATION.md'
+      - 'kernel/DESIGN-LANGUAGE.md'
+      - 'research/BREC-LANE-I-RECURSIVE-CORRIDOR.md'
+      - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
+      - '.github/workflows/brec-recursive-engine.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx_standalone_i.c'
+      - 'kernel/src/cbx.c'
+      - 'kernel/analyze_brec.py'
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'kernel/analyze_brec_target.py'
+      - 'kernel/verify_brec_i.py'
+      - 'kernel/Makefile'
+      - '.github/workflows/brec-recursive-engine.yml'
+
+jobs:
+  exact-brec:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      BREC_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.hi || '2000000' }}
+      BREC_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '80' }}
+      BREC_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '8' }}
+      BREC_SEGMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.segment || '250000' }}
+    steps:
+      - name: Install build tools
+        run: dnf -y install git gcc make python3
+
+      - uses: actions/checkout@v4
+
+      - name: Validate requested finite grade
+        run: |
+          python3 - <<'PY'
+          import os
+
+          hi = int(os.environ['BREC_HI'])
+          i_max = int(os.environ['BREC_I_MAX'])
+          order = int(os.environ['BREC_ORDER'])
+          segment = int(os.environ['BREC_SEGMENT'])
+          assert hi >= 2
+          assert i_max >= 3
+          assert 1 <= order <= 16
+          assert 1 <= segment <= 100_000_000
+          PY
+
+      - name: Build BREC and reference engines
+        run: make -C kernel cbx-brec-i cbx-standalone-i
+
+      - name: Reference-equivalence self-test
+        run: kernel/cbx-brec-i --self-test
+
+      - name: Analyzer self-tests
+        run: |
+          python3 kernel/analyze_brec.py --self-test
+          python3 kernel/analyze_brec_cylinder.py --self-test
+          python3 kernel/analyze_brec_target.py --self-test
+
+      - name: Finite reference census
+        run: |
+          kernel/cbx-standalone-i \
+            --hi "$BREC_HI" \
+            --i-max "$BREC_I_MAX" \
+            --segment "$BREC_SEGMENT" \
+            > /tmp/standalone-summary.json
+
+      - name: Finite recursive census
+        run: |
+          kernel/cbx-brec-i \
+            --hi "$BREC_HI" \
+            --i-max "$BREC_I_MAX" \
+            --order "$BREC_ORDER" \
+            --segment "$BREC_SEGMENT" \
+            --histories /tmp/brec-histories.tsv \
+            > /tmp/brec-summary.json
+
+      - name: Verify optimized BREC against exact reference
+        run: |
+          python3 kernel/verify_brec_i.py \
+            /tmp/standalone-summary.json \
+            /tmp/brec-summary.json \
+            --json \
+            > /tmp/brec-equivalence.json
+
+      - name: Analyze recursive history structure
+        run: |
+          PREFIX_DEPTH="$BREC_ORDER"
+          if [ "$PREFIX_DEPTH" -gt 6 ]; then PREFIX_DEPTH=6; fi
+          python3 kernel/analyze_brec.py \
+            /tmp/brec-summary.json \
+            --histories /tmp/brec-histories.tsv \
+            --prefix-depth "$PREFIX_DEPTH" \
+            --json \
+            > /tmp/brec-analysis.json
+
+      - name: Analyze k23 obstruction cylinder
+        if: ${{ fromJSON(env.BREC_I_MAX) >= 23 }}
+        run: |
+          python3 kernel/analyze_brec_cylinder.py \
+            /tmp/brec-histories.tsv \
+            --prefix='-----' \
+            --json \
+            > /tmp/brec-k23-cylinder.json
+
+      - name: Trace fixed k23 target through obstruction ancestry
+        if: ${{ fromJSON(env.BREC_I_MAX) >= 23 }}
+        run: |
+          python3 kernel/analyze_brec_target.py \
+            /tmp/brec-histories.tsv \
+            --target-k 23 \
+            --max-prefix-depth 5 \
+            --json \
+            > /tmp/brec-k23-target.json
+
+      - name: Validate recursive accounting
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/brec-summary.json').read_text())
+          eq = json.loads(Path('/tmp/brec-equivalence.json').read_text())
+          analysis = json.loads(Path('/tmp/brec-analysis.json').read_text())
+          assert obj['mode'] == 'brec-I'
+          assert obj['brec_spec'] == 'BREC-v1.0'
+          assert obj['application'] == 'CBX-Lane-I-shift-history-v1'
+          assert obj['order'] == int(os.environ['BREC_ORDER'])
+          assert obj['hi'] == int(os.environ['BREC_HI'])
+          assert obj['i_max'] == int(os.environ['BREC_I_MAX'])
+          expected_nonempty = (1 << (obj['order'] + 1)) - 2
+          assert obj['formal_nonempty_histories_through_order'] == expected_nonempty
+          assert obj['formal_histories_including_epsilon'] == expected_nonempty + 1
+          assert obj['constructive'] + obj['obstructive'] == obj['defined_stages']
+          assert obj['defined_stages'] + obj['undefined_stages'] == obj['stages']
+          assert obj['cross']['right_plus'] == obj['constructive']
+          assert obj['cross']['left_minus'] == obj['obstructive']
+          assert obj['optimization']['targets'] == '-1,-p^-1'
+          assert obj['optimization']['signed_box_traversals_per_defined_stage'] == 1
+          assert obj['motifs']
+          assert eq['verified'] is True
+          assert eq['constructive'] == obj['constructive']
+          assert analysis['mode'] == 'analyze-brec-I'
+          assert analysis['hard_primes'] == obj['hard_primes']
+          assert analysis['motifs']['cross_check']['right_plus_matches'] is True
+          assert analysis['motifs']['cross_check']['left_minus_matches'] is True
+          cylinders = analysis['histories']['prefix_cylinders']
+          assert cylinders['max_depth'] == min(obj['order'], 6)
+          if cylinders['max_depth'] >= 6:
+              split = next(x for x in cylinders['all_negative_splits'] if x['parent'] == '-----')
+              assert split['next_k'] == 23
+
+          if obj['i_max'] >= 23:
+              cyl = json.loads(Path('/tmp/brec-k23-cylinder.json').read_text())
+              target = json.loads(Path('/tmp/brec-k23-target.json').read_text())
+              assert cyl['mode'] == 'analyze-brec-cylinder'
+              assert cyl['prefix'] == '-----'
+              assert cyl['next_k'] == 23
+              assert cyl['binary_children'] == (
+                  cyl['constructive_child']['count'] + cyl['obstructive_child']['count']
+              )
+              assert target['mode'] == 'analyze-brec-target'
+              assert target['target_k'] == 23
+              assert target['source_primes'] == obj['hard_primes']
+
+              # Frozen finite regression for the canonical 2M development grade.
+              # These are exact census facts only, not universal claims.
+              if obj['hi'] == 2_000_000 and obj['i_max'] >= 23:
+                  ancestry = {row['prefix_depth']: row for row in target['ancestry']}
+                  assert target['first_observed_two_target_coincidence_depth'] == 1
+                  assert ancestry[0]['count'] == 4519
+                  assert ancestry[0]['both'] == 2956
+                  assert ancestry[0]['miss'] == 1561
+                  assert ancestry[0]['type_i_only'] == 2
+                  assert ancestry[0]['type_ii_only'] == 0
+                  assert ancestry[1]['count'] == 2770
+                  assert ancestry[1]['two_target_coincidence'] is True
+                  assert ancestry[1]['type_i_only'] == 0
+                  assert ancestry[1]['type_ii_only'] == 0
+                  assert ancestry[5]['count'] == 237
+                  assert ancestry[5]['both'] == 149
+                  assert ancestry[5]['miss'] == 88
+                  assert ancestry[5]['two_target_coincidence'] is True
+                  assert cyl['constructive_child']['hit_classes'] == [
+                      {'value': 'both', 'count': 149}
+                  ]
+                  assert cyl['obstructive_child']['hit_classes'] == [
+                      {'value': 'miss', 'count': 88}
+                  ]
+                  assert cyl['constructive_child']['full_unit_support'] == 125
+                  assert cyl['obstructive_child']['full_unit_support'] == 0
+                  assert cyl['obstructive_child']['box_support_sizes'] == [
+                      {'value': 11, 'count': 86},
+                      {'value': 19, 'count': 2},
+                  ]
+                  assert cyl['obstructive_child']['common_missing_unit_residues'] == [22]
+
+          lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
+          assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
+          assert len(lines) == obj['hard_primes'] + 1
+          PY
+
+      - name: Write finite census manifest
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = {
+              'application': 'CBX-Lane-I-shift-history-v1',
+              'hi': int(os.environ['BREC_HI']),
+              'i_max': int(os.environ['BREC_I_MAX']),
+              'order': int(os.environ['BREC_ORDER']),
+              'segment': int(os.environ['BREC_SEGMENT']),
+              'commit': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+          }
+          Path('/tmp/brec-manifest.json').write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + '\n'
+          )
+          PY
+
+      - name: Stage finite research artifacts
+        run: |
+          mkdir -p /tmp/brec-artifacts
+          cp /tmp/brec-manifest.json /tmp/brec-artifacts/
+          cp /tmp/standalone-summary.json /tmp/brec-artifacts/
+          cp /tmp/brec-summary.json /tmp/brec-artifacts/
+          cp /tmp/brec-histories.tsv /tmp/brec-artifacts/
+          cp /tmp/brec-equivalence.json /tmp/brec-artifacts/
+          cp /tmp/brec-analysis.json /tmp/brec-artifacts/
+          if [ -f /tmp/brec-k23-cylinder.json ]; then
+            cp /tmp/brec-k23-cylinder.json /tmp/brec-artifacts/
+          fi
+          if [ -f /tmp/brec-k23-target.json ]; then
+            cp /tmp/brec-k23-target.json /tmp/brec-artifacts/
+          fi
+
+      - name: Preserve finite BREC census
+        uses: actions/upload-artifact@v4
+        with:
+          name: brec-finite-census-${{ env.BREC_HI }}-K${{ env.BREC_I_MAX }}-N${{ env.BREC_ORDER }}
+          path: /tmp/brec-artifacts
+          if-no-files-found: error
+          retention-days: 30

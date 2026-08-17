@@ -1,0 +1,60 @@
+name: h169 k11 future factor11 partition
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - 'research/H169-K11-FUTURE-FACTOR11-PARTITION.md'
+      - '.github/workflows/h169-k11-future-factor11.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_future_factor_partition.py'
+      - '.github/workflows/h169-k11-future-factor11.yml'
+
+jobs:
+  exact-future-partition:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_h169_k11_future_factor_partition.py
+
+      - name: Verify exact partition
+        run: |
+          python3 research/verify_h169_k11_future_factor_partition.py \
+            > /tmp/h169-k11-future-factor11.json
+
+      - name: Validate theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k11-future-factor11.json').read_text())
+          assert obj['verified'] is True
+          assert obj['k11_combined_miss_implies_t_mod_11'] == [0,2,3,4,8]
+          assert obj['future_factor_11_shifts'] == [35,39,43,51,63]
+          assert obj['latest_forced_shift'] == 63
+
+          rows = {row['t_mod_11']: row for row in obj['partition']}
+          assert (rows[0]['T_mod_11'], rows[0]['p_mod_11'], rows[0]['shift_k']) == (8,4,51)
+          assert (rows[2]['T_mod_11'], rows[2]['p_mod_11'], rows[2]['shift_k']) == (1,1,43)
+          assert (rows[3]['T_mod_11'], rows[3]['p_mod_11'], rows[3]['shift_k']) == (3,5,39)
+          assert (rows[4]['T_mod_11'], rows[4]['p_mod_11'], rows[4]['shift_k']) == (5,9,35)
+          assert (rows[8]['T_mod_11'], rows[8]['p_mod_11'], rows[8]['shift_k']) == (2,3,63)
+          assert 'J35-only' in obj['calendar_to_grammar_interfaces']['t_mod_11_4']
+          PY
+
+      - name: Preserve exact partition
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-future-factor11
+          path: /tmp/h169-k11-future-factor11.json
+          if-no-files-found: error
+          retention-days: 30

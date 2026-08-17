@@ -1,0 +1,203 @@
+name: hard-class predecessor forced seeds
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_h289_k19_quotient_normal_form.py'
+      - 'research/verify_h289_k19_residue_normal_form.py'
+      - 'research/verify_k11_k19_phase_seed_coupling.py'
+      - 'research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md'
+      - 'research/H169-H289-H529-K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/H289-K19-QUOTIENT-NORMAL-FORM.md'
+      - 'research/H289-K19-RESIDUE-NORMAL-FORM.md'
+      - 'research/K11-K19-PHASE-SEED-COUPLING.md'
+      - '.github/workflows/hard-class-predecessor-seeds.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_hard_class_predecessor_forced_seeds.py'
+      - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_h289_k19_quotient_normal_form.py'
+      - 'research/verify_h289_k19_residue_normal_form.py'
+      - 'research/verify_k11_k19_phase_seed_coupling.py'
+      - '.github/workflows/hard-class-predecessor-seeds.yml'
+
+jobs:
+  exact-forced-seeds:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact verifiers
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/classify_signed_box_residue_automaton.py \
+            research/verify_k11_brec_obstruction_normal_form.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_hard_class_predecessor_forced_seeds.py \
+            research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
+            research/verify_h289_k19_quotient_normal_form.py \
+            research/verify_h289_k19_residue_normal_form.py \
+            research/verify_k11_k19_phase_seed_coupling.py
+
+      - name: Verify hard-class seed reductions
+        run: |
+          python3 research/verify_hard_class_predecessor_forced_seeds.py \
+            > /tmp/hard-class-predecessor-seeds.json
+
+      - name: Verify h169 h289 h529 k11 QR collapse
+        run: |
+          python3 research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
+            > /tmp/h169-h289-h529-k11.json
+
+      - name: Verify h289 k19 quotient normal form
+        run: |
+          python3 research/verify_h289_k19_quotient_normal_form.py \
+            > /tmp/h289-k19-quotient.json
+
+      - name: Verify concrete h289 k19 residue normal form
+        run: |
+          python3 research/verify_h289_k19_residue_normal_form.py \
+            > /tmp/h289-k19-residue.json
+
+      - name: Verify k11 to k19 phase seed coupling
+        run: |
+          python3 research/verify_k11_k19_phase_seed_coupling.py \
+            > /tmp/k11-k19-phase-seed.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/hard-class-predecessor-seeds.json').read_text())
+          k11 = json.loads(Path('/tmp/h169-h289-h529-k11.json').read_text())
+          h289 = json.loads(Path('/tmp/h289-k19-quotient.json').read_text())
+          h289r = json.loads(Path('/tmp/h289-k19-residue.json').read_text())
+          coupling = json.loads(Path('/tmp/k11-k19-phase-seed.json').read_text())
+
+          assert obj['verified'] is True
+          assert obj['hard_to_T_mod35'] == {
+              '1': 1, '121': 6, '169': 8, '289': 13, '361': 16, '529': 23
+          }
+          rows = {row['p_mod_840']: row for row in obj['classes']}
+
+          assert rows[169]['k11']['seed_residues'] == [3, 5]
+          assert rows[289]['k11']['seed_residues'] == [3, 5]
+          assert rows[529]['k11']['seed_residues'] == [3, 5]
+          for hard in (169, 289, 529):
+              assert rows[hard]['k11']['type_II_miss_states'] == 5
+              assert rows[hard]['k11']['combined_miss_states'] == 5
+              assert rows[hard]['k11']['type_I_only_states'] == 0
+
+          assert rows[1]['k19']['seed_residues'] == [5]
+          assert rows[1]['k19']['type_II_miss_states'] == 64
+          assert rows[121]['k19']['seed_residues'] == [5, 7]
+          assert rows[121]['k19']['type_II_miss_states'] == 9
+          assert rows[121]['k19']['combined_miss_states'] == 9
+          assert rows[121]['k19']['type_I_only_states'] == 0
+          assert rows[169]['k19']['seed_residues'] == []
+          assert rows[169]['k19']['type_II_miss_states'] == 254
+          assert rows[289]['k19']['seed_residues'] == [7]
+          assert rows[289]['k19']['type_II_miss_states'] == 27
+          assert rows[361]['k19']['seed_residues'] == [5]
+          assert rows[529]['k19']['seed_residues'] == []
+
+          assert k11['verified'] is True
+          assert k11['hard_classes'] == [169, 289, 529]
+          seeded = k11['seeded_q11_automaton']
+          assert seeded['seed_residues'] == [3, 5]
+          assert seeded['type_II_miss_states'] == 5
+          assert seeded['combined_miss_states'] == 5
+          assert seeded['type_I_only_states'] == 0
+          assert seeded['qr_only_combined_miss_states'] == 5
+
+          regressions = {row['p']: row for row in k11['regressions']}
+          for p in (2689, 12049, 5569):
+              assert regressions[p]['sign'] == '-'
+              assert regressions[p]['general_k11_branch'] == 'pure-QR'
+              assert regressions[p]['all_prime_divisors_QR_mod_11'] is True
+          for p in (1009, 1129, 3049):
+              assert regressions[p]['sign'] == '+'
+              assert regressions[p]['all_prime_divisors_QR_mod_11'] is False
+
+          assert h289['verified'] is True
+          assert h289['hard_forcing']['p_mod_840'] == 289
+          assert h289['hard_forcing']['forced_prime'] == 7
+          assert h289['hard_forcing']['forced_support_exponents'] == [0, 6, 12]
+          q = h289['quotient']
+          assert q['quotient_states'] == 9
+          assert q['quotient_combined_miss_states'] == 6
+          assert q['quotient_type_I_only_states'] == 3
+          assert q['full_seeded_states'] == 27
+          assert q['full_combined_miss_states'] == 18
+          assert q['full_type_I_only_states'] == 9
+          assert q['fiber_size'] == 3
+          assert len(q['table']) == 9
+
+          h289_reg = {row['p']: row for row in h289['regressions']}
+          assert h289_reg[1129]['exact_hit_class'] == 'type-I-only'
+          assert h289_reg[8689]['exact_hit_class'] == 'miss'
+          assert h289_reg[22129]['exact_hit_class'] == 'type-II-only'
+
+          assert h289r['verified'] is True
+          assert h289r['hard_class'] == 289
+          assert h289r['partition']['K'] == [1, 7, 11]
+          assert h289r['partition']['P_plus'] == [2, 3, 14]
+          assert h289r['partition']['P_minus'] == [10, 13, 15]
+          assert h289r['partition']['direct_Type_II'] == [8, 12, 18]
+          assert h289r['thin_type_I_only_packets'] == [[1, 0], [1, 1], [2, 0]]
+          assert h289r['thin_combined_miss_packets'] == [[0, 1], [0, 2]]
+          rreg = {row['p']: row for row in h289r['regressions']}
+          assert rreg[1129]['normal_form']['branch'] == 'thin-NR'
+          assert rreg[10369]['normal_form']['branch'] == 'thin-NR'
+          assert rreg[8689]['normal_form']['branch'] == 'pure-QR'
+          assert rreg[22129]['normal_form']['branch'] == 'outside-TypeII-miss-normal-form'
+
+          assert coupling['verified'] is True
+          assert coupling['hard_classes'] == [169, 289, 529]
+          assert coupling['k11_miss_forces_T_mod11'] == [1, 2, 3, 5, 8]
+          assert coupling['selected_phase'] == 2
+          seed = coupling['k19_order_three_seed']
+          assert seed['K'] == [0, 6, 12]
+          assert seed['log2_7'] == 6
+          assert seed['log2_11'] == 12
+          assert seed['quotient_state_identities_equal'] is True
+          assert seed['seed11']['quotient_states'] == 9
+          assert seed['seed11']['quotient_combined_miss'] == 6
+          assert seed['seed11']['quotient_type_I_only'] == 3
+          c_reg = {row['p']: row for row in coupling['regressions']}
+          assert c_reg[53089]['k19_hit_class'] == 'both'
+          assert c_reg[71569]['k19_hit_class'] == 'type-II-only'
+          assert c_reg[80809]['k19_hit_class'] == 'miss'
+          assert c_reg[5569]['k19_hit_class'] == 'miss'
+          PY
+
+      - name: Preserve exact seeded-state tables
+        uses: actions/upload-artifact@v4
+        with:
+          name: hard-class-predecessor-forced-seeds
+          path: |
+            /tmp/hard-class-predecessor-seeds.json
+            /tmp/h169-h289-h529-k11.json
+            /tmp/h289-k19-quotient.json
+            /tmp/h289-k19-residue.json
+            /tmp/k11-k19-phase-seed.json
+          if-no-files-found: error
+          retention-days: 30

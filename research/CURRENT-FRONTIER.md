@@ -1,1001 +1,629 @@
-# Current research frontier
+# CENTL-CBX Current Research Frontier
 
-**Date:** 2026-08-15  
-**Claim boundary:** Erdős-Straus remains open. Universal López Type A/B coverage remains open. Universal DSC-0 and DSC-P are false. Universal prime strong/Type-II coverage is also unproved. The Mizony/Thépault divisor-square mechanism is classical prior art. The active FCF work is the structural synthesis, shadow theory, Kneser theory, and exact fixed-shift analysis described below.
+## Status
 
----
+Erdős–Straus remains open.
 
-## 1. The proof search now has two distinct lanes
+This repository contains an exact candidate-decomposition framework, a production-equivalent CBX X-ray kernel, and an increasingly explicit fixed-shift dependency grammar. Finite censuses, motif frequencies, and observed survivor contractions are not proofs unless a separate exact theorem and independent verifier are stated.
 
-Do not conflate these.
+The detailed BREC ledger is maintained in
 
-### Lane A: exact prime Erdős-Straus
+```text
+research/BREC-CURRENT-FRONTIER.md.
+```
 
-For prime
-
-\[
-p\equiv1\pmod4
-\]
-
-and an admissible shift
-
-\[
-k\equiv3\pmod4,
-\qquad
-\gcd(k,p)=1,
-\]
-
-put
-
-\[
-C_k=\frac{p+k}{4}
-\]
-
-and define
-
-\[
-\boxed{
-\mathcal R_k(C_k)
-=
-\left\{
-\prod_i r_i^{z_i}\pmod k:
--e_i\le z_i\le e_i,
-\quad
-C_k=\prod_i r_i^{e_i}
-\right\}.}
-\]
-
-`ES-TWO-TARGET-SIGNED-BOX-EQUIVALENCE.md` proves
-
-\[
-\boxed{
- p\text{ satisfies Erdős-Straus}
-\iff
-\exists k:
-\{-p^{-1},-1\}
-\cap
-\mathcal R_k(C_k)
-\ne\varnothing.}
-\]
-
-The targets are standard Type I and Type II respectively. Inversion symmetry adds the equivalent Type-I orientation `-p`.
-
-This is an exact reformulation of prime ES.
-
-### Lane B: classical strong/Type-II route
-
-For a layer index `a`, define
-
-\[
-\boxed{
-S_a
-=
-\{-4D\pmod{4a-1}:D\mid a^2\}.}
-\]
-
-Universal prime coverage by the layers `S_a` would prove the classical strong/Type-II form and therefore Erdős-Straus, but it is logically stronger than original ES.
-
-The condition
-
-\[
-D\mid a^2,
-\qquad
-4a-1\mid p+4D
-\]
-
-belongs to the historical Mizony/Thépault/Rosati-Yamamoto lineage. See:
-
-- `STRONG-ES-MIZONY-THEPAULT-PROVENANCE.md`
-- `SQUARE-COMPLETION-PRIOR-ART.md`
-
-No novelty claim should be made for the square-divisor criterion itself.
+This file records the global mathematical position.
 
 ---
 
-## 2. DSC is closed as the universal bridge
+## 1. Exact BREC recursive engine
 
-The explicit hosted counterexample proves
+The Bryan Recursive Entanglement Calculus is implemented as downstream exact Lane-I telemetry.
 
-\[
-\boxed{\mathrm{DSC\!\!-0}\text{ is false},
-\qquad
-\mathrm{DSC\!\!-P}\text{ is false}.}
-\]
+For admissible shifts
 
-The following remain valid supporting mathematics:
+```text
+k = 3 mod4,
+```
 
-- strong/weak/pointwise `q=3` absorption;
-- exact reduced-parameter domain;
-- finite exact-depth certificates;
-- direct-shadow smoothness;
-- character and multiplicative quotient structure;
-- covering-core / hypergraph depth theory.
+BREC records
 
-Do not spend the main ES effort trying to restore universal DSC.
+```text
++  iff the exact signed box hits {-1,-p^(-1)}
+-  iff the exact signed box misses both targets
+?  iff the application stage is undefined.
+```
+
+The production-equivalent verdict order remains
+
+```text
+W -> I -> N -> L.
+```
+
+BREC does not create proof or pruning authority by itself.
+
+The exact cofactor orbit is affine:
+
+```text
+k_j = 4j+3,
+C_j = (p+k_j)/4,
+C_(j+1)=C_j+1,
+4C_j-k_j=p.
+```
+
+Thus an anchored BREC history is a sequence of exact signed-box labels on consecutive cofactors while the modulus advances by four.
 
 ---
 
-## 3. López A/B are the two boundary orthants of the classical square layer
+## 2. Anchored ancestry versus sliding motifs
 
-The ordinary López trap at layer `a` is
+BREC distinguishes
 
-\[
-T_a
-=
-\{-e,-4e:e\mid a\}
-\pmod{4a-1}.
-\]
+```text
+sliding motif:
+    a +/- word occurring anywhere in a history
+
+anchored prefix:
+    a +/- word beginning at absolute shift k=3.
+```
+
+For example
+
+```text
+-----
+```
+
+as an anchored prefix means exact combined misses at
+
+```text
+k=3,7,11,15,19.
+```
+
+This distinction is mandatory for fixed-shift theorem work.
+
+---
+
+## 3. The finite k23 coincidence pattern was falsified
+
+The first `p<=2,000,000` BREC corpus contained no one-sided Type-I/Type-II state at fixed `k=23` after one or more all-negative ancestors.
+
+That finite pattern was attacked directly and is false in general.
+
+Exact Type-I-only witnesses include
+
+```text
+p =  5,151,841   early history -++-+
+p =  8,243,281   early history ---++
+p = 18,766,609   early history -----
+p = 27,211,969   early history -----.
+```
+
+Therefore no all-negative ancestry depth from one through five forces Type-I/Type-II target coincidence at k23.
+
+Permanent falsifier objects:
+
+```text
+research/verify_k23_brec_ancestry_falsifiers.py
+research/K23-BREC-TWO-TARGET-COINCIDENCE.md.
+```
+
+This episode establishes the standing research rule:
+
+```text
+finite contraction
+    -> candidate only
+        -> adversarial extension
+            -> preserve falsifier if false
+            -> exact theorem + independent verifier if true
+                -> only then pruning authority.
+```
+
+---
+
+## 4. Exact q23 Type-I-only integer normal form
+
+Conditional on the established q23 Type-II miss normal form, the Type-I companion has been exhausted exactly.
 
 Write
 
-\[
-a=\prod_i\ell_i^{E_i},
-\qquad
-D=\prod_i\ell_i^{U_i},
-\qquad
-0\le U_i\le2E_i.
-\]
+```text
+T=(p+23)/24.
+```
 
-Then `ES-SQUARE-COMPLETION-TRAP-GEOMETRY.md` proves:
+Every q23 Type-I-only rescue has
 
-- López Type A is the lower orthant `U_i<=E_i` for every `i`;
-- López Type B is the upper orthant `U_i>=E_i` for every `i`;
-- the additional standard Type-II parameters are the mixed cross-orthant points.
+```text
+C23=6T,
+p=24T-23,
+T=mR,
+```
 
-The exact mixed parameter count is
+where
 
-\[
-\boxed{
-M(a)=\tau(a^2)-2\tau(a)+1.}
-\]
+```text
+every prime divisor of m is 1 mod23,
+Omega(R)=2,
+all prime valuations of R lie in one class rho in {5,14} mod23.
+```
 
-Thus
+The only local rescue states are the same-class valuation-two defects
 
-\[
-\boxed{M(a)=0\iff a\text{ is a prime power}.}
-\]
+```text
+5^2
+14^2.
+```
 
-Prime-power layers are unchanged by completion:
+The square and distinct-semiprime realizations of the two valuations are both locally compatible with all six Mordell-hard residue classes. Hard class alone cannot eliminate either q23 rescue split.
 
-\[
-\boxed{S_a=T_a\quad\text{if }\omega(a)=1.}
-\]
+Files:
 
----
-
-## 4. Central synthesis: the completed layer is a symmetric Kneser box
-
-Center the square-divisor exponents:
-
-\[
-z_i=U_i-E_i.
-\]
-
-Since
-
-\[
-4a\equiv1\pmod{4a-1},
-\]
-
-one gets
-
-\[
--4D
-\equiv
--\prod_i\ell_i^{z_i}
-\pmod{4a-1}.
-\]
-
-Therefore
-
-\[
-\boxed{
-S_a
-=-\mathcal R_{4a-1}(a).}
-\]
-
-This is the main structural merger.
-
-The old program studied cross-layer congruence shadowing. The newer program studied Kneser expansion and stabilizers of symmetric product boxes. They now act on the same classical strong/Type-II object.
-
-Divisor complement
-
-\[
-D\mapsto a^2/D
-\]
-
-is exactly
-
-\[
-z\mapsto-z
-\]
-
-and therefore residue inversion.
-
-The López A/B mutual-inverse relation is the boundary restriction of this global symmetry.
-
-See:
-
-- `ES-SQUARE-TRAP-SIGNED-BOX-IDENTITY.md`
-- `ES-SQUARE-TRAP-COMPLEMENT.md`
+```text
+research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md
+research/verify_k23_typei_only_integer_normal_form.py
+research/K23-RESCUE-SPLIT-HARD-CLASS-COMPATIBILITY.md
+research/verify_k23_rescue_split_hard_classes.py.
+```
 
 ---
 
-## 5. The old character shields survive completion
+## 5. The complete first-six q23 predecessor corridor
+
+On the q23 Type-I-only parameter `T`, the first six Lane-I cofactors are
+
+```text
+C3  = 6T-5
+C7  = 2(3T-2)
+C11 = 3(2T-1)
+C15 = 2(3T-1)
+C19 = 6T-1
+C23 = 6T.
+```
+
+Every predecessor through k19 now has an exact normal-form language.
+
+### k=3
+
+```text
+sigma_3=-
+iff
+every prime divisor of 6T-5 is 1 mod3.
+```
+
+### k=7
+
+```text
+sigma_7=-
+iff
+every prime divisor of 3T-2 is in {1,2,4} mod7.
+```
+
+For Mordell-hard primes, Type I and Type II have identical hit/miss status at k7.
+
+### k=11
+
+The general exact combined miss is either:
+
+```text
+pure QR splitting modulo11,
+```
+
+or the thin primitive Type-II-miss branch over residue classes `(2,6)` with packet
+
+```text
+(1,0), (0,1), or (1,1).
+```
+
+The same-class valuation-two packets
+
+```text
+(2,0), (0,2)
+```
+
+are exact Type-I-only rescues.
+
+### k=15
 
 Let
 
-\[
-H_a
-=
-\langle \ell\bmod(4a-1):\ell\mid a\rangle.
-\]
-
-The complete strong layer satisfies
-
-\[
-\boxed{
-T_a
-\subseteq
-S_a
-\subseteq
--H_a
-\subseteq
-\{x:(x/(4a-1))=-1\}.}
-\]
-
-Thus square completion changes exact occupancy inside the old multiplicative coset, but does not weaken the coarse multiplicative or Jacobi shields.
-
-See `ES-SQUARE-COMPLETION-COSET-SHIELD.md`.
-
----
-
-## 6. Root geometry
-
-Every square-divisor parameter may be written
-
-\[
-D=sb^2,
-\qquad
-\frac{a^2}{D}=sc^2,
-\qquad
- a=sbc,
-\]
-
-with `s` squarefree.
-
-The Type-II equations become
-
-\[
-\boxed{
-p+q=4sbt,
-\qquad
-b+t=cq.}
-\]
-
-López comparability is exact:
-
-\[
-\boxed{
-\begin{array}{ccl}
-\text{Type A}&\iff&b\mid c,\\
-\text{Type B}&\iff&c\mid b,\\
-\text{mixed strong Type II}&\iff&b\nmid c\text{ and }c\nmid b.
-\end{array}}
-\]
-
-See `ES-TYPEII-ROOT-GEOMETRY.md`.
-
----
-
-## 7. Completed depth is unbounded, but finite compression is strong
-
-Two elementary facts hold for every layer:
-
-\[
-\boxed{1\notin S_a,}
-\qquad
-\boxed{-1\in S_a.}
-\]
-
-The prime-modulus CRT/Dirichlet backbone therefore survives completion.
-
-Whenever
-
-\[
-4a-1>7
-\]
-
-is prime, infinitely many Mordell-hard primes have exact strong/Type-II first depth `a`.
-
-Hence completed first-hit depth is unbounded.
-
-A reproducible finite census through
-
-\[
-p\le50,000,000
-\]
-
-contains `93,457` Mordell-hard primes, all captured by completed layers with
-
-\[
-\boxed{a\le624.}
-\]
-
-The unique deepest observed prime is
-
-\[
-\boxed{p=2,031,121}
-\]
-
-with mixed witness
-
-\[
-\boxed{a=624,
-\quad D=576,
-\quad 4a-1=2495,
-\quad q=815.}
-\]
-
-Its López A/B first depth is `1403`.
-
-This is finite compression only, not a universal ceiling.
-
-See:
-
-- `ES-SQUARE-COMPLETION-BACKBONE.md`
-- `SQUARE-COMPLETION-FINITE-CENSUS.md`
-- `square_completion_probe.py`
-
----
-
-## 8. Exact prime-index spectrum
-
-If the layer index `a` is prime, then
-
-\[
-S_a=\{-4,-1,-a\}.
-\]
-
-Every ancestry edge into such a layer is a complete shadow. Consequently:
-
-\[
-\boxed{
- a\text{ prime is an exact completed depth}
-\iff
-4a-1\text{ is prime}.}
-\]
-
-The positive case is realized infinitely often by Mordell-hard primes.
-
-See `ES-SQUARE-PRIME-INDEX-SPECTRUM.md`.
-
----
-
-## 9. Prime-power and squarefree-semiprime dichotomy
-
-### Prime powers
-
-If `a` is a prime power,
-
-\[
-S_a=T_a.
-\]
-
-In particular the power-of-two Mersenne shadow lattice carries over unchanged, including its infinite structural-gap families.
-
-### Squarefree semiprimes
-
-If
-
-\[
-a=uv
-\]
-
-with distinct primes `u<v`, the only mixed square divisors are
-
-\[
-u^2,\qquad v^2.
-\]
-
-Their signed ratios
-
-\[
-u/v,\qquad v/u
-\]
-
-lie outside every López boundary residue.
-
-Therefore
-
-\[
-\boxed{T_{uv}\subsetneq S_{uv}}
-\]
-
-for every squarefree semiprime layer.
-
-See `ES-SQUAREFREE-SEMIPRIME-MIXED-RESIDUES.md`.
-
----
-
-## 10. Multiplicative ancestry is completely classified
-
-Fix an ancestor `j` and let
-
-\[
-R_j=\mathcal R_{4j-1}(j),
-\qquad
-H_j=\operatorname{Stab}(R_j).
-\]
-
-Take a multiplicative descendant
-
-\[
-k=jB
-\]
-
-on an ancestry edge. The ancestry condition is
-
-\[
-B\equiv1\pmod{4j-1}.
-\]
+```text
+H=<2>={1,2,4,8} in U(15).
+```
 
 Then
 
-\[
-\boxed{
-S_{jB}\bmod(4j-1)\subseteq S_j
-\iff
-r\bmod(4j-1)\in H_j
-\text{ for every prime }r\mid B.}
-\]
+```text
+sigma_15=-
+iff
+every prime divisor of 3T-1 lies in H mod15.
+```
 
-Any containment is automatically equality.
+### k=19
 
-This is an exact iff classification of direct shadows on multiplicative ancestry edges.
+Using primitive root `2` modulo19, expand prime valuations of `6T-1` into discrete-log atoms `a_i` and define
 
-See `ES-SQUARE-MULTIPLICATIVE-SHADOW-IFF.md`.
+```text
+c = sum a_i mod18,
+S = sum {-a_i,0,+a_i} subset Z/18Z.
+```
+
+The exact target exponents are
+
+```text
+Type II : 9
+Type I  : 7-c mod18.
+```
+
+Hence
+
+```text
+sigma_19=-
+iff
+9 not in S and 7-c not in S.
+```
+
+The exhaustive local state closure is
+
+```text
+439 exact reachable states,
+254 Type-II-miss states,
+136 combined-miss states,
+118 Type-I-only states.
+```
+
+Every combined-miss state has a canonical representative of at most three valuation atoms; every state has one of at most four. This is a state-complexity bound, not a bound on `Omega(C19)`.
+
+The full 439-state closure and the independently written Type-II-miss automaton have been cross-verified state-for-state, including minimal depths and the identities of all 136 combined misses.
+
+Core files:
+
+```text
+research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K15-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K19-BREC-CYCLIC-STATE-COMPRESSION.md
+research/K19-AUTOMATON-EQUIVALENCE.md
+research/K23-PREDECESSOR-CORRIDOR-NORMAL-FORMS.md.
+```
 
 ---
 
-## 11. Internal stabilizers manufacture infinite cross-layer gaps
+## 6. Reduced predecessor forms are pairwise coprime
 
-If every prime factor of an extension `B` lies in `H_j` and
+Remove the forced factors from k7, k11, and k15 and define
 
-\[
-B\equiv1\pmod{4j-1},
-\]
-
-then
-
-\[
-S_{jB}\bmod(4j-1)=S_j.
-\]
-
-For any `h in H_j`, Dirichlet gives primes
-
-\[
-r\equiv h,
-\qquad
-s\equiv h^{-1}
-\pmod{4j-1}.
-\]
-
-Then `B=rs` gives an infinite structural-gap cone above `j`.
-
-This is the first exact theorem where an internal Kneser stabilizer generates cross-layer shadow edges.
-
-See `ES-SQUARE-STABILIZER-EXTENSION-SHADOW.md`.
-
----
-
-## 12. Nonmultiplicative ancestry also has infinite exact structure
-
-### Squarefree factor-lift theorem
-
-If the later index is squarefree
-
-\[
-k=r_1\cdots r_t
-\]
-
-and the ancestor factors as
-
-\[
-j=A_1\cdots A_t
-\]
-
-with
-
-\[
-r_i\equiv A_i\pmod{4j-1},
-\]
-
-then
-
-\[
-\boxed{S_k\bmod(4j-1)\subseteq S_j.}
-\]
-
-### Every ancestry quotient has infinite factor-lift families
-
-For any
-
-\[
-Q=4s+1,
-\]
-
-choose a squarefree divisor `A|s`, put `t=s/A`, choose a prime
-
-\[
-r\equiv-t\pmod Q,
-\]
-
-and define
-
-\[
-B=\frac{r+t}{Q},
-\qquad
-j=AB,
-\qquad
-k=Ar.
-\]
+```text
+A=6T-5,
+B=3T-2,
+C=2T-1,
+D=3T-1,
+E=6T-1.
+```
 
 Then
 
-\[
-\boxed{4k-1=Q(4j-1)}
-\]
+```text
+A,B,C,D,E
+```
 
-and the later layer is completely shadowed by `j`.
+are pairwise coprime for every integer `T`.
 
-Dirichlet supplies infinitely many such `r`.
+This follows from the exact cancellations
 
-Therefore:
+```text
+A-2B=-1
+A-3C=-2
+A-2D=-3
+A-E=-4
+2B-3C=-1
+B-D=-1
+2B-E=-3
+3C-2D=-1
+3C-E=-2
+2D-E=-1,
+```
 
-\[
-\boxed{
-\text{every allowed ancestry quotient supports infinitely many exact completed structural gaps}.}
-\]
+with parity and fixed mod3 residues removing the only possible factors in the non-unit rows.
 
-See:
+Therefore a cross-coordinate contradiction cannot be based on one nontrivial prime factor being shared by two reduced predecessor coordinates. The coupling must use the common affine parameter, residue/character information, valuation structure, or the q23 factor grammar.
 
-- `ES-SQUARE-SQUAREFREE-FACTOR-LIFT.md`
-- `ES-SQUARE-ALL-QUOTIENT-FACTOR-LIFT.md`
+Files:
+
+```text
+research/K23-PREDECESSOR-CORE-PAIRWISE-COPRIME.md
+research/verify_k23_predecessor_pairwise_coprime.py.
+```
 
 ---
 
-## 13. Exponent-lattice normal form for arbitrary ancestry
+## 7. Hard-class conditioning now gives exact local reductions
+
+The six hard classes correspond to
+
+```text
+p mod840   T mod35
+------------------
+1              1
+121            6
+169            8
+289           13
+361           16
+529           23.
+```
+
+These residues inject literal factors into the predecessor forms.
+
+### k11 hard-class collapse
 
 For
 
-\[
-j=\prod_i p_i^{E_i},
-\]
+```text
+p mod840 in {169,289,529},
+```
 
-define
+we have
 
-\[
-\phi_j:\mathbb Z^d\to(\mathbb Z/(4j-1)\mathbb Z)^\times,
-\qquad
-z\mapsto\prod_i p_i^{z_i},
-\]
+```text
+5 | (2T-1).
+```
 
-and
+The literal prime `5` is QR modulo11 but is not `1 mod11`. It therefore makes the general q11 thin branch impossible.
 
-\[
-L_j=\ker\phi_j.
-\]
+Exact consequence:
 
-The ancestor completed box is the image of
+```text
+p mod840 in {169,289,529}
+=>
+sigma_11=- iff every prime divisor of C11 is QR mod11.
+```
 
-\[
-B_j=\prod_i[-E_i,E_i]_{\mathbb Z}.
-\]
+Equivalently a Type-II miss automatically implies a Type-I miss in those three hard classes.
 
-For a later ancestry layer
+Files:
 
-\[
-k=\prod_\nu r_\nu^{F_\nu},
-\]
+```text
+research/H169-H289-H529-K11-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py.
+```
 
-choose exponent lifts `v_nu` with
+### k19 hard-class seeds
 
-\[
-\phi_j(v_\nu)=r_\nu.
-\]
+The forced q19 seeds are
 
-Define the later discrete zonotope
+```text
+hard 1       : [5]
+hard 121     : [5,7]
+hard 169     : []
+hard 289     : [7]
+hard 361     : [5]
+hard 529     : [].
+```
 
-\[
-Z(k\to j)
-=
-\left\{
-\sum_\nu z_\nu v_\nu:
--F_\nu\le z_\nu\le F_\nu
-\right\}.
-\]
+Their exact Type-II-miss state budgets are
 
-Then direct shadow is exactly
+```text
+seed []     : 254 = 136 combined + 118 Type-I-only
+seed [5]    :  64 =  44 combined +  20 Type-I-only
+seed [7]    :  27 =  18 combined +   9 Type-I-only
+seed [5,7]  :   9 =   9 combined +   0 Type-I-only.
+```
 
-\[
-\boxed{
-Z(k\to j)
-\subseteq
-B_j+L_j.}
-\]
+For h121 the forced factors `5*7` fill the entire QR subgroup modulo19, yielding the exact theorem
 
-A strong sufficient coordinate-budget test is
+```text
+sigma_19=-
+iff
+every prime divisor of C19 is QR mod19.
+```
 
-\[
-\boxed{
-\sum_\nu F_\nu |(v_\nu)_i|\le E_i
-\quad\forall i.}
-\]
+For h289 the forced factor `7` supplies the order-three subgroup `{0,6,12}` in the q19 exponent group. Exact target behavior factors through
 
-This turns residual nonmultiplicative shadowing into a finite zonotope-in-lattice-cover problem.
+```text
+Z/18Z / <6> ~= Z/6Z.
+```
 
-See `ES-SQUARE-EXPONENT-LATTICE-SHADOW.md`.
+The complete h289 Type-II-miss quotient has only
 
----
+```text
+9 states = 6 combined misses + 3 Type-I-only,
+```
 
-## 14. Effective dimension can be much smaller than prime support
+with exactly three full q19 lifts per quotient state.
 
-For
+Files:
 
-\[
-j=2^e p
-\]
-
-with `p` odd prime,
-
-\[
-4j-1=2^{e+2}p-1
-\]
-
-gives
-
-\[
-p\equiv2^{-(e+2)}.
-\]
-
-Therefore the raw two-dimensional completed box collapses exactly to
-
-\[
-\boxed{
-\mathcal R_{4j-1}(j)
-=
-\{2^z:-2e-2\le z\le2e+2\}.}
-\]
-
-For `j=2p`, this is the nine-step interval `[-4,4]` in powers of `2`.
-
-This explains non-factor-lift shadows such as the finite edge `j=10 -> k=8083=59*137`.
-
-See `ES-SQUARE-BINARY-PRIME-INTERVAL.md`.
-
-The next internal invariant should be **effective signed-box dimension modulo `4j-1`**, not merely `omega(j)`.
+```text
+research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md
+research/H121-K19-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/H289-K19-QUOTIENT-NORMAL-FORM.md
+research/verify_hard_class_predecessor_forced_seeds.py
+research/verify_h289_k19_quotient_normal_form.py.
+```
 
 ---
 
-## 15. Completed depth spectrum is quantitatively infinite and coinfinite
+## 8. QR support reservoir principle
 
-The prime-modulus backbone gives
+A reusable subgroup mechanism has now been isolated.
 
-\[
-\boxed{
-|\mathcal D_{\rm sq}\cap[1,K]|
-\ge
-(1+o(1))\frac{2K}{\log(4K)}.}
-\]
+For prime `q=3 mod4`, suppose a QR-only factor subcollection `A` has exact signed support
 
-The quotient-nine factor-lift family
+```text
+R_q(A)=Q_q,
+```
 
-\[
-k=2r,
-\qquad
-r\equiv8\pmod9
-\]
+the full quadratic-residue subgroup.
 
-gives structural gaps with
+Then:
 
-\[
-\boxed{
-|\mathcal G_{\rm sq}\cap[1,K]|
-\ge
-(1+o(1))\frac{K}{12\log K}.}
-\]
+```text
+residual factors all QR
+    -> support remains Q_q
+    -> both Lane-I targets miss
 
-Thus the completed strong/Type-II depth spectrum is provably infinite and coinfinite, with explicit backbone and anti-backbone subfamilies both of prime-counting order.
+any residual NR factor
+    -> its coset rQ_q is complete
+    -> support becomes U(q)
+    -> both targets hit.
+```
 
-See `ES-SQUARE-SPECTRUM-INFINITE-COINFINITE.md`.
+This recovers the h121 k19 theorem and gives exact valuation thresholds such as
 
----
+```text
+q=11, v3(C11)>=2
+    -> QR reservoir saturated
 
-## 16. Fixed-shift strong/Type-II search lives in a finite corridor
+q=19, v5(C19)>=4
+    -> QR reservoir saturated.
+```
 
-A successful Type-II shift `q` satisfies
+In hard classes 1 and361, where literal factor5 is already forced at k19, the latter gives the conditional exact theorem
 
-\[
-\boxed{3q\le p+4.}
-\]
+```text
+v5(C19)>=4
+=>
+sigma_19=- iff every prime divisor of C19 is QR mod19.
+```
 
-Writing
+Files:
 
-\[
-A=\frac{p+3}{4},
-\]
-
-the shifts
-
-\[
-q_h=4h+3
-\]
-
-correspond to consecutive integers
-
-\[
-C_h=A+h.
-\]
-
-Only
-
-\[
-0\le h\le\left\lfloor\frac{p-5}{12}\right\rfloor
-\]
-
-can support a Type-II solution.
-
-Thus a hypothetical strong counterexample requires simultaneous signed-box defects across a long finite corridor of consecutive integers.
-
-See `STRONG-ES-FINITE-SHIFT-CORRIDOR.md`.
+```text
+research/QR-SUPPORT-RESERVOIR-SATURATION.md
+research/verify_qr_support_reservoir_saturation.py.
+```
 
 ---
 
-## 17. Exact small-shift factor filters
+## 9. Finite q23 -> k19 frontier and preserved falsification
 
-For Mordell-hard primes:
+The first finite grade
 
-### q = 3
+```text
+p<=30,000,000,
+q23 Type-I-only,
+anchored prefix ----
+```
 
-\[
-\boxed{
-q=3\text{ misses}
-\iff
-\text{every prime factor of }\frac{p+3}{4}
-\text{ is }1\pmod3.}
-\]
+contained exactly three candidates, all accidentally in hard class169.
 
-### q = 7
+That pattern was attacked at 100M and failed.
 
-\[
-\boxed{
-q=7\text{ misses}
-\iff
-\text{every prime factor of }\frac{p+7}{4}
-\text{ is a quadratic residue mod }7.}
-\]
+At
 
-### q = 11
+```text
+p<=100,000,000
+```
 
-A miss is either:
+the exact forward census contains nine q23 Type-I-only candidates with prefix `----`:
 
-1. pure quadratic splitting modulo `11`, or
-2. a thin defect with `v_3=1`, all other QR factors `1 mod11`, only primitive NR classes `2,6`, and total such valuation at most `2`.
+```text
+18,766,609   mod840=169   -----   rho=14   k19 miss
+25,180,849   mod840=169   ----+   rho=14   k19 Type-II-only
+27,211,969   mod840=169   -----   rho=5    k19 miss
+31,935,121   mod840=1     ----+   rho=14   k19 Type-I-only
+35,870,641   mod840=121   -----   rho=5    k19 miss
+48,224,401   mod840=1     -----   rho=5    k19 miss
+49,554,961   mod840=1     -----   rho=14   k19 miss
+54,831,841   mod840=1     -----   rho=5    k19 miss
+85,241,521   mod840=1     -----   rho=5    k19 miss.
+```
 
-### q = 23
+The k19 split is
 
-Because `6|(p+23)/4`, the forced factors `2,3` generate almost the entire QR subgroup. A miss is either:
+```text
+7 combined misses
+1 Type-I-only
+1 Type-II-only.
+```
 
-1. pure quadratic splitting modulo `23`, or
-2. a thin defect with `v_2=v_3=1`, all other QR factors `1 mod23`, only NR classes `5,14`, and total such valuation at most `2`.
+Therefore neither
 
-See:
+```text
+---- q23 rescue => hard class169
+```
 
-- `FAB-HARD-FIRST-FILTERS.md`
-- `STRONG-ES-Q7-EXACT-FILTER.md`
-- `STRONG-ES-Q11-EXACT-FILTER.md`
-- `STRONG-ES-Q23-EXACT-FILTER.md`
+nor
 
----
+```text
+----- q23 rescue => hard class169
+```
 
-## 18. The first four prime shifts already give a dimension-three sieve
+is a universal implication.
 
-Classical upper-bound sieve theory applied to the exact corridor filters gives:
+The finite falsification is preserved in
 
-\[
-\boxed{
-\#\{p\le X:\ q=3,7\text{ both miss}\}
-\ll
-\frac{X}{(\log X)^2}.}
-\]
+```text
+research/Q23-K19-100M-FINITE-FRONTIER.md.
+```
 
-Adding `q=11` gives
-
-\[
-\boxed{
-\#\{p\le X:\ q=3,7,11\text{ all miss}\}
-\ll
-\frac{X}{(\log X)^{5/2}}.}
-\]
-
-Adding `q=23` gives
-
-\[
-\boxed{
-\#\{p\le X:\ q=3,7,11,23\text{ all miss}\}
-\ll
-\frac{X}{(\log X)^3}.}
-\]
-
-The last estimate is a relative-prime exceptional proportion
-
-\[
-\boxed{O((\log X)^{-2}).}
-\]
-
-These are specific applications of classical Selberg/Brun sieve ideas. Classical full-ES exceptional-set theorems are much stronger.
-
-See:
-
-- `STRONG-ES-Q3-Q7-SIEVE.md`
-- `STRONG-ES-Q3-Q7-Q11-SIEVE.md`
-- `STRONG-ES-Q3-Q7-Q11-Q23-SIEVE.md`
+No universal nine-candidate statement is claimed.
 
 ---
 
-## 19. Exact-ES external-shift Kneser obstruction theory remains active
+## 10. Existing later-shift exact corpus remains active
 
-For external prime shifts
+The prior exact program is still in force, including:
 
-\[
-q\equiv3\pmod4,
-\qquad
-(q/p)=-1,
-\]
+```text
+q23 Type-II filters,
+h169 realized k19 routes,
+post-k23 companion ladder and support-renewal laws,
+k27 survivor grammar and QR selectors,
+k31 survivor normal forms,
+k35 branch/valuation structure,
+Route-B k47 structure,
+later phase feedback modules,
+reduced h169 dependency grammar,
+prime backbone and composite core.
+```
 
-a combined Type-I/Type-II failure has even stabilizer index
+The BREC predecessor work does not replace those modules. It gives them a sharper ancestry-conditioned entry state.
 
-\[
-\boxed{n\ge6}
-\]
+In particular, the h169 post-k23 ladder
 
-and symmetric defect budget
+```text
+C23=6B,
+C_{23+4j}=6B+j
+```
 
-\[
-\boxed{
-\sum_i
-\left(
-\min(2e_i+1,\operatorname{ord}(r_iH))-1
-\right)
-\le n-4.}
-\]
-
-At index six the failure reduces to one simple primitive sextic factor and a forced external-nonresidue edge.
-
-Consecutive primitive defects can occur, with exact recurrence
-
-\[
-\boxed{
-q_{i-1}
-\equiv
-q_{i+1}^{\pm2}u_i^6
-\pmod{q_i}.}
-\]
-
-A hypothetical ES counterexample would require unbounded full-stabilizer quotient complexity as the auxiliary shift varies, and the least odd prime divisor of that defect index can be forced arbitrarily large.
-
-Thus no finite classification of low Kneser defect indices can finish exact ES.
+and its exact support-renewal identities remain major candidates for a genuine terminating decomposition transition.
 
 ---
 
-## 20. Two-target corridor companions (2026-08-15)
+## 11. Active proof targets
 
-The exact two-target reformulation now has four additional corridor theorems on the original-ES side, not merely the strong/Type-II side.
+The immediate frontier is now cross-coordinate rather than fixed-shift.
 
-### Linear form `2p+1`
+The exact early object is
 
-`TWO-P-PLUS-ONE-FILTER.md` proves that a Mordell-hard prime is solved as soon as `2p+1` has a divisor `7\bmod8`. A counterexample must place `2p+1` in the same `{1,3}\bmod8` semigroup already forced on `p+2`.
+```text
+T
+ |
+ +-- 6T-5   k3 semigroup
+ +-- 3T-2   k7 QR semigroup
+ +-- 2T-1   k11 class-conditioned QR/thin grammar
+ +-- 3T-1   k15 subgroup semigroup
+ +-- 6T-1   k19 class-conditioned finite state
+ +-- 6T      q23 same-class Omega-two rescue.
+```
 
-### `q=3` and `q=7` have no Type-I surplus
+High-value targets are:
 
-At `q=3` the two targets coincide for hard primes. At `q=7`, `HARD-Q7-TYPE-I-NO-RESCUE.md` proves they fail together: the forced factor `2` fills the whole quadratic-residue subgroup, and every hard class is itself a residue modulo `7`. Combined failure equals the existing Type-II miss.
+1. determine which class-conditioned k19 states remain arithmetically compatible with the first four predecessor laws and each q23 rescue class;
+2. exploit the h289 nine-state quotient rather than the generic 439-state k19 universe;
+3. reduce the h1/h361 seed-[5] k19 universe, especially the unsaturated valuation cases below the QR-reservoir threshold;
+4. determine whether the q11 hard-class collapse forces later k19 product exponents or support modes;
+5. couple the exact predecessor grammar to the existing post-k23 h169 ladder and its k27/k31 absorber candidates;
+6. attack every apparent finite cross-coordinate absence by targeted extension before promoting it to a theorem.
 
-### `q=11` has a genuine Type-I companion
-
-`Q11-TYPE-I-COMPANION.md` classifies the rescues. After a Type-II miss, Type I still hits on explicit residue classes modulo `11` once the QR box is full, and on the thinner set `{7,8,10}` when the box is only `{1,3,4}`. Through `2\cdot10^6` this companion solves `13` hard primes that Type II missed at the same shift.
-
-### Composite shift `k=15`
-
-`K15-TWO-TARGET-FILTER.md` identifies the two-primary subgroup
-
-\[
-H=\langle2\rangle=\{1,2,4,8\}\subset(\mathbb Z/15\mathbb Z)^\times.
-\]
-
-Both hard-class Type-I targets and the Type-II target lie outside `H`. Combined failure occurs exactly on the `H`-trap (every prime factor of `(p+15)/4` is `1,2,4,8\bmod15`) or on one thin `11`-packet. Any prime factor `7,13,14\bmod15`, or `11` with `v_2\ge2`, is an immediate Type-II hit.
-
-### Finite residual after `3,7,11`
-
-Through `2{,}000{,}000` there are `4519` Mordell-hard primes. Combined two-target failure at `3,7,11` leaves `711` primes, all solved by some later shift in
-
-\[
-\{15,19,23,27,31,35,39,43,47,51,55,59\}.
-\]
-
-The next exact target after `k=19` is the Type-I companion to the existing `q=23` Type-II theorem.
-
-These are corridor theorems, not a bounded-window existence proof.
-
-### Independent covering obstruction
-
-A separate attack asked whether a fixed multiplier `M` can force `M\mid(p+k)/4` at the aligned shift `k\equiv-p\pmod{4M}` and hit Type II from the signed box of `M` alone. `HARD-SMOOTH-TYPEII-OBSTRUCTION.md` proves this is impossible whenever `M` is `{2,3,5,7}`-smooth: the whole forced box is Jacobi-positive, while `-1` is Jacobi-negative. Any uniform Type-II arithmetic-progression cover of a hard class must import an external prime `ℓ≥11`. Including `13` produces at least one explicit infinite family,
-
-\[
-p=10920t+10369,
-\qquad
-\frac4p=\frac1{546Tp}+\frac1{2730T}+\frac1{5Tp},\quad T=t+1.
-\]
-
-That family sits inside the single hard class `289\bmod840` and does not cover the class. Original Erdős--Straus remains open.
+The desired end product is not another percentage table. It is a well-founded exact transition grammar in which every surviving state is either decomposed or mapped to a strictly reduced proof-bearing state.
 
 ---
 
-## 21. Current highest-priority proof targets
+## 12. Claim boundary
 
-### A. Strong/Type-II cross-layer ancestry
+Exact results currently include the fixed-shift predecessor normal forms, q23 Type-I-only integer normal form, pairwise-coprime predecessor core, k19 finite-state closure and independent automaton equivalence, class-conditioned k11 collapse, h121 k19 QR theorem, h289 k19 quotient theorem, and QR-reservoir saturation lemma.
 
-Use the exact object
+The 30M and 100M q23/k19 contractions are finite evidence only; the 100M run also preserves a falsifier to the 30M hard-class pattern.
 
-\[
-S_a=-\mathcal R_{4a-1}(a)
-\]
-
-and classify the residual nonmultiplicative ancestry edges after removing:
-
-1. multiplicative stabilizer extensions, already solved exactly;
-2. factor-lift families, already infinite at every quotient;
-3. low effective-dimension folds such as `2^e p`.
-
-The exponent-lattice criterion is now the primary language.
-
-### B. Strong/Type-II finite corridor
-
-Continue exact fixed-shift classifications at useful small primes `q` and track the added sieve dimension.
-
-The immediate questions are:
-
-1. identify more shifts where hard congruences force a large QR product subset;
-2. quantify all exceptional low-entropy branches;
-3. determine whether a useful uniform family of corridor shifts exists.
-
-### C. Exact ES two-target lane
-
-Continue the corridor from the new `k=19` combined filter. The immediate exact target is the Type-I companion to the already-classified Type-II shift `k=23`.
-
-The proven unbounded-defect forcing theorem still means no finite list of Kneser indices can finish the external-nonresidue lane. The corridor lane is a different finite-for-each-prime search and is not forbidden by that theorem.
-
-### D. Prior-art review
-
-Continue tracing Thépault, Mizony, Rosati-Yamamoto, Mordell, Bradford, López, Chamberland, and BHB-F so all structural novelty claims remain conservative and publication-safe.
-
-### E. Public hunt
-
-The operator-facing attack is now a public infinite hunt: [`ES-HUNT.md`](ES-HUNT.md), kernels [`bb.kernel`](bb.kernel) and [`CC.kernel`](CC.kernel), findings under [`findings/`](findings/START-HERE.md). The recurrence is the windows \((s,s+\Delta]\) with no last interval. Letters are collected; the engine stops when the operator stops it. Letter numbers are the first 128 bits of SHA-256 of `ES-LETTER-v1` and do not depend on the start factor. A cleared window is not a proof.
-
----
-
-## 22. One-line status
-
-The main new research object is now clear:
-
-\[
-\boxed{
-\text{classical Mizony/Thépault strong layer}
-=
-\text{square-completed López layer}
-=
--\text{symmetric signed divisor box}.}
-\]
-
-Its internal Kneser geometry and cross-layer shadow geometry are now partially unified, multiplicative ancestry is completely classified, every ancestry quotient has infinite exact gap families, the residual shadow problem has an exact exponent-lattice form, and four tiny fixed Type-II shifts already leave only an `O(X/(log X)^3)` prime survivor set. On the original-ES two-target corridor the first three prime shifts are now combined-exact, `2p+1` is an additional linear-form filter, `k=15` is a complete two-target theorem, and `k=19` is now a complete two-target theorem (QR-trap, class-`121` filling of `Q`, and a one-pair Type-II companion table). Original Erdős-Straus remains open.
+No result in this repository currently proves the Erdős–Straus conjecture, a universal finite Lane-I ceiling, or a complete closed decomposition method.

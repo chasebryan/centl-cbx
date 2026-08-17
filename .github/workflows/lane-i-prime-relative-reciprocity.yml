@@ -1,0 +1,75 @@
+name: Lane-I prime-relative reciprocity
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_lane_i_prime_relative_reciprocity.py'
+      - 'research/LANE-I-PRIME-RELATIVE-RECIPROCITY.md'
+      - '.github/workflows/lane-i-prime-relative-reciprocity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_lane_i_prime_relative_reciprocity.py'
+      - 'research/LANE-I-PRIME-RELATIVE-RECIPROCITY.md'
+      - '.github/workflows/lane-i-prime-relative-reciprocity.yml'
+
+jobs:
+  exact-reciprocity-bridge:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifier
+        run: python3 -m py_compile research/verify_lane_i_prime_relative_reciprocity.py
+
+      - name: Verify exact reciprocity bridge
+        run: |
+          python3 research/verify_lane_i_prime_relative_reciprocity.py \
+            > /tmp/lane-i-prime-relative-reciprocity.json
+
+      - name: Validate theorem certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/lane-i-prime-relative-reciprocity.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'lane-i-prime-relative-reciprocity'
+          assert obj['identity'] == 'Legendre(q/p)=Jacobi(q/k)'
+          assert obj['domain'] == {
+              'p': 'odd prime, p=1 mod4',
+              'k': 'positive odd integer, k=3 mod4',
+              'C_k': '(p+k)/4',
+              'q': 'odd prime divisor of C_k with gcd(q,k)=1',
+          }
+          assert obj['proof_chain'] == [
+              'q|C_k -> p=-k mod q',
+              'p=1 mod4 -> (q/p)=(p/q)',
+              'p=-k modq -> (p/q)=(-k/q)',
+              'k=3 mod4 -> (-k/q)=(q/k)',
+          ]
+          assert obj['sign_cancellation']['identity'] == (
+              '(-k/q)=(q/k) for odd gcd(q,k)=1 and k=3 mod4'
+          )
+          counts = obj['finite_regression']['counts']
+          assert counts['checked_distinct_prime_divisor_instances'] >= 20000
+          assert counts['QR'] > 0
+          assert counts['NR'] > 0
+          selected = obj['finite_regression']['selected_shift_character_counts']['51']
+          assert int(selected['-1']) > 0
+          assert int(selected['1']) > 0
+          assert obj['h169_regression']['checked_instances'] >= 4000
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: lane-i-prime-relative-reciprocity
+          path: /tmp/lane-i-prime-relative-reciprocity.json
+          if-no-files-found: error
+          retention-days: 30

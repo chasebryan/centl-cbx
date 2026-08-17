@@ -1,0 +1,77 @@
+name: BREC early normal forms
+
+on:
+  pull_request:
+    paths:
+      - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/verify_k3_brec_obstruction_normal_form.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - '.github/workflows/brec-early-normal-forms.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_k3_brec_obstruction_normal_form.py'
+      - 'research/verify_k7_brec_obstruction_normal_form.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - '.github/workflows/brec-early-normal-forms.yml'
+
+jobs:
+  exact-early-brec:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact normal-form verifiers
+        run: |
+          python3 -m py_compile \
+            research/verify_k3_brec_obstruction_normal_form.py \
+            research/verify_k7_brec_obstruction_normal_form.py \
+            research/verify_k11_brec_obstruction_normal_form.py
+
+      - name: Verify k3
+        run: python3 research/verify_k3_brec_obstruction_normal_form.py > /tmp/k3.json
+
+      - name: Verify k7
+        run: python3 research/verify_k7_brec_obstruction_normal_form.py > /tmp/k7.json
+
+      - name: Verify k11
+        run: python3 research/verify_k11_brec_obstruction_normal_form.py > /tmp/k11.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          k3 = json.loads(Path('/tmp/k3.json').read_text())
+          k7 = json.loads(Path('/tmp/k7.json').read_text())
+          k11 = json.loads(Path('/tmp/k11.json').read_text())
+
+          assert k3['verified'] is True
+          assert k3['combined_target'] == 2
+
+          assert k7['verified'] is True
+          assert k7['two_target_coincidence'] is True
+          assert k7['QR7'] == [1, 2, 4]
+          assert k7['NR7'] == [3, 5, 6]
+
+          assert k11['verified'] is True
+          assert k11['pure_QR_branch']['combined_miss'] is True
+          states = {(row['a2'], row['a6']): row for row in k11['thin_states']}
+          assert states[(0, 0)]['hit_class'] == 'miss'
+          assert states[(1, 0)]['hit_class'] == 'miss'
+          assert states[(0, 1)]['hit_class'] == 'miss'
+          assert states[(1, 1)]['hit_class'] == 'miss'
+          assert states[(2, 0)]['hit_class'] == 'type-I-only'
+          assert states[(0, 2)]['hit_class'] == 'type-I-only'
+          assert k11['thin_combined_miss_packets'] == [[0, 0], [0, 1], [1, 0], [1, 1]]
+          assert k11['thin_type_I_only_packets'] == [[0, 2], [2, 0]]
+          assert k11['q23_rescue_translation']['C11'] == '3*(2*T-1)'
+          PY

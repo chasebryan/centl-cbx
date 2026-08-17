@@ -1,0 +1,84 @@
+name: BREC cofactor prestrip prototype
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/src/cbx_brec_prestrip.c'
+      - 'kernel/src/cbx.c'
+      - 'research/BREC-LANE-I-AFFINE-COFACTOR-RECURRENCE.md'
+      - '.github/workflows/brec-cofactor-prestrip.yml'
+  workflow_dispatch:
+    inputs:
+      prime:
+        description: Prime used to derive the consecutive Lane-I cofactor block
+        required: true
+        default: '9658489'
+        type: string
+      i_max:
+        description: Maximum Lane-I shift
+        required: true
+        default: '400'
+        type: string
+      repeat:
+        description: Benchmark repetitions
+        required: true
+        default: '5'
+        type: string
+
+jobs:
+  exact-prestrip:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      BENCH_PRIME: ${{ github.event_name == 'workflow_dispatch' && inputs.prime || '9658489' }}
+      BENCH_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '400' }}
+      BENCH_REPEAT: ${{ github.event_name == 'workflow_dispatch' && inputs.repeat || '2' }}
+    steps:
+      - name: Install compiler
+        run: dnf -y install git gcc
+
+      - uses: actions/checkout@v4
+
+      - name: Build block prestrip prototype
+        run: |
+          cc -O3 -std=c11 -Wall -Wextra \
+            -o /tmp/cbx-brec-prestrip \
+            kernel/src/cbx_brec_prestrip.c \
+            -lm
+
+      - name: Exact factor-equivalence self-test
+        run: /tmp/cbx-brec-prestrip --self-test
+
+      - name: Benchmark Lane-I cofactor block
+        run: |
+          /tmp/cbx-brec-prestrip \
+            --prime "$BENCH_PRIME" \
+            --i-max "$BENCH_I_MAX" \
+            --repeat "$BENCH_REPEAT" \
+            > /tmp/prestrip-benchmark.json
+
+      - name: Validate benchmark accounting
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/prestrip-benchmark.json').read_text())
+          assert obj['mode'] == 'brec-prestrip-benchmark'
+          assert obj['verified'] is True
+          assert obj['count'] > 0
+          assert obj['small_primes'] == 25
+          assert obj['block_initial_mod_tests'] == 25
+          assert obj['scalar_small_prime_mod_tests'] == obj['count'] * 25
+          assert obj['block_initial_mod_tests'] < obj['scalar_small_prime_mod_tests']
+          assert obj['scalar_seconds'] >= 0
+          assert obj['block_seconds'] >= 0
+          PY
+
+      - name: Preserve benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: brec-cofactor-prestrip-${{ env.BENCH_PRIME }}-K${{ env.BENCH_I_MAX }}
+          path: /tmp/prestrip-benchmark.json
+          if-no-files-found: error
+          retention-days: 30
