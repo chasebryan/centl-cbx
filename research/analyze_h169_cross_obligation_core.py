@@ -17,8 +17,13 @@ Two exact cross-coordinate theorem atoms are compiled:
   2. factor11_in_R is incompatible with k19 BARE, because BARE requires every
      prime divisor of R to be 1 mod19 while 11 mod19 is 11.
 
+The other inherited k11 phases may carry theorem-verified local resource
+certificates without becoming new Boolean grammar dimensions.  In particular,
+t11 == 2 forces literal factor11 at k43; the exact seeded q43 automaton then
+supplies a finite Type-II-miss closure and NR-valuation budget.
+
 For a contradictory partial state, the tool deletion-minimizes the supplied
-assumptions plus those two cross theorem atoms.  Minimality is relative to the
+assumptions plus the two cross theorem atoms.  Minimality is relative to the
 landed base grammar, which remains fixed background proof data.
 """
 
@@ -31,6 +36,7 @@ from functools import lru_cache
 from typing import Callable, Iterable
 
 import propagate_h169_dependency_state as dep
+import verify_h169_k11_phase_k43_seed as k43seed
 import verify_k19_nr_valuation_budget as nrbudget
 
 T11_DOMAIN = (0, 2, 3, 4, 8)
@@ -108,6 +114,44 @@ def base_survivors(route: str) -> tuple[dep.State, ...]:
         for state in dep.naive_states(route)
         if all(rule.predicate(route, state) for rule in dep.RULES)
     )
+
+
+@lru_cache(maxsize=1)
+def k43_seed_resource() -> dict[str, object]:
+    obj = k43seed.verify()
+    phase = obj["phase"]
+    generic = obj["generic_q43"]
+    seeded = obj["seed11_q43"]
+    contraction = obj["exact_contraction"]
+    if phase["t_mod_11"] != 2 or phase["forced_shift"] != 43:
+        raise AssertionError("k43 seed theorem phase changed")
+    if phase["consequence"] != "11|C43":
+        raise AssertionError("k43 seed theorem lost factor11 consequence")
+    if seeded["TypeII_miss_states"] != 2317:
+        raise AssertionError("seed11 q43 closure changed")
+    if seeded["NR_budget"]["max_NR_valuation"] != 14:
+        raise AssertionError("seed11 q43 NR budget changed")
+    return {
+        "literal_prime": 11,
+        "destination_shift": 43,
+        "phase": "t mod11=2",
+        "forced_consequence": "11|C43",
+        "generic_TypeII_miss_states": generic["TypeII_miss_states"],
+        "seed11_TypeII_miss_states": seeded["TypeII_miss_states"],
+        "seed11_combined_miss_states": seeded["combined_miss_states"],
+        "seed11_TypeI_only_states": seeded["TypeI_only_states"],
+        "generic_max_Omega_NR": generic["NR_budget"]["max_NR_valuation"],
+        "seed11_max_Omega_NR": seeded["NR_budget"]["max_NR_valuation"],
+        "positive_NR_edges_inside_seeded_SCCs": seeded["NR_budget"][
+            "positive_NR_edges_inside_SCCs"
+        ],
+        "state_ratio": contraction["TypeII_miss_state_ratio"],
+        "states_removed": contraction["states_removed"],
+        "interpretation": (
+            "exact local k43 resource contraction inherited from the k11 phase; "
+            "this is not yet a branch-deletion theorem"
+        ),
+    }
 
 
 def cross_states(route: str) -> Iterable[CrossState]:
@@ -239,6 +283,17 @@ def live_obligations(route: str, states: list[CrossState]) -> dict[str, object]:
             "k19 miss mode FULL_QR",
             "seed11 Type-II-miss Omega_NR budget <=2",
         ]
+
+    if forced.get("t_mod_11") == 2:
+        out["k43_seed_obligation"] = k43_seed_resource()
+        out["phase2_chain"] = [
+            "t mod11=2",
+            "T mod11=1",
+            "11|C43",
+            "preload literal residue11 in q43 signed box",
+            "conditional k43 Type-II miss -> exact seed11 closure size 2317",
+            "conditional k43 Type-II miss -> Omega_NR(C43)<=14",
+        ]
     return out
 
 
@@ -258,7 +313,7 @@ def analyze(
 
     result: dict[str, object] = {
         "verified_background": True,
-        "analysis": "h169-cross-obligation-core-v1",
+        "analysis": "h169-cross-obligation-core-v2",
         "route": route,
         "input_constraints": {
             field: sorted(values, key=str)
@@ -270,7 +325,8 @@ def analyze(
         "claim_boundary": (
             "cross-coordinate explanation over the realized h169 pair-route "
             "grammar with inherited k11 miss.  The landed base grammar is fixed "
-            "background proof data; core minimality is relative to it."
+            "background proof data; core minimality is relative to it.  Local "
+            "resource certificates do not assert arithmetic realization."
         ),
     }
 
@@ -323,10 +379,23 @@ def self_test() -> None:
     assert obligations["forced"]["k19_mode"] == "FULL_QR"  # type: ignore[index]
     assert obligations["factor11_obligation"]["k19_TypeII_miss_max_Omega_NR"] == 2  # type: ignore[index]
 
+    k43 = analyze("A", parse_constraints({"t_mod_11": 2}))
+    assert k43["contradiction"] is False
+    obligations = k43["obligations"]  # type: ignore[index]
+    resource = obligations["k43_seed_obligation"]  # type: ignore[index]
+    assert resource["literal_prime"] == 11  # type: ignore[index]
+    assert resource["destination_shift"] == 43  # type: ignore[index]
+    assert resource["generic_TypeII_miss_states"] == 18_048  # type: ignore[index]
+    assert resource["seed11_TypeII_miss_states"] == 2_317  # type: ignore[index]
+    assert resource["generic_max_Omega_NR"] == 20  # type: ignore[index]
+    assert resource["seed11_max_Omega_NR"] == 14  # type: ignore[index]
+    assert resource["positive_NR_edges_inside_seeded_SCCs"] == 0  # type: ignore[index]
+
     other = analyze("B", parse_constraints({"t_mod_11": 4}))
     assert other["contradiction"] is False
     obligations = other["obligations"]  # type: ignore[index]
     assert obligations["forced"]["factor11_in_R"] is False  # type: ignore[index]
+    assert "k43_seed_obligation" not in obligations
     assert set(obligations["domains"]["k19_mode"]) == {"BARE", "FULL_QR"}  # type: ignore[index]
 
 
@@ -350,7 +419,7 @@ def main() -> int:
 
     if args.self_test:
         self_test()
-        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v1"}))
+        print(json.dumps({"verified": True, "analysis": "h169-cross-obligation-core-v2"}))
         return 0
     if not args.route:
         parser.error("--route is required unless --self-test is used")
