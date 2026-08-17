@@ -10,10 +10,12 @@ on:
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
       - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
       - 'research/verify_h289_k19_quotient_normal_form.py'
+      - 'research/verify_h289_k19_residue_normal_form.py'
       - 'research/verify_k11_k19_phase_seed_coupling.py'
       - 'research/HARD-CLASS-PREDECESSOR-FORCED-SEEDS.md'
       - 'research/H169-H289-H529-K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/H289-K19-QUOTIENT-NORMAL-FORM.md'
+      - 'research/H289-K19-RESIDUE-NORMAL-FORM.md'
       - 'research/K11-K19-PHASE-SEED-COUPLING.md'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
   push:
@@ -26,6 +28,7 @@ on:
       - 'research/verify_hard_class_predecessor_forced_seeds.py'
       - 'research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py'
       - 'research/verify_h289_k19_quotient_normal_form.py'
+      - 'research/verify_h289_k19_residue_normal_form.py'
       - 'research/verify_k11_k19_phase_seed_coupling.py'
       - '.github/workflows/hard-class-predecessor-seeds.yml'
 
@@ -49,6 +52,7 @@ jobs:
             research/verify_hard_class_predecessor_forced_seeds.py \
             research/verify_h169_h289_h529_k11_brec_obstruction_normal_form.py \
             research/verify_h289_k19_quotient_normal_form.py \
+            research/verify_h289_k19_residue_normal_form.py \
             research/verify_k11_k19_phase_seed_coupling.py
 
       - name: Verify hard-class seed reductions
@@ -66,6 +70,11 @@ jobs:
           python3 research/verify_h289_k19_quotient_normal_form.py \
             > /tmp/h289-k19-quotient.json
 
+      - name: Verify concrete h289 k19 residue normal form
+        run: |
+          python3 research/verify_h289_k19_residue_normal_form.py \
+            > /tmp/h289-k19-residue.json
+
       - name: Verify k11 to k19 phase seed coupling
         run: |
           python3 research/verify_k11_k19_phase_seed_coupling.py \
@@ -80,6 +89,7 @@ jobs:
           obj = json.loads(Path('/tmp/hard-class-predecessor-seeds.json').read_text())
           k11 = json.loads(Path('/tmp/h169-h289-h529-k11.json').read_text())
           h289 = json.loads(Path('/tmp/h289-k19-quotient.json').read_text())
+          h289r = json.loads(Path('/tmp/h289-k19-residue.json').read_text())
           coupling = json.loads(Path('/tmp/k11-k19-phase-seed.json').read_text())
 
           assert obj['verified'] is True
@@ -146,6 +156,20 @@ jobs:
           assert h289_reg[8689]['exact_hit_class'] == 'miss'
           assert h289_reg[22129]['exact_hit_class'] == 'type-II-only'
 
+          assert h289r['verified'] is True
+          assert h289r['hard_class'] == 289
+          assert h289r['partition']['K'] == [1, 7, 11]
+          assert h289r['partition']['P_plus'] == [2, 3, 14]
+          assert h289r['partition']['P_minus'] == [10, 13, 15]
+          assert h289r['partition']['direct_Type_II'] == [8, 12, 18]
+          assert h289r['thin_type_I_only_packets'] == [[1, 0], [1, 1], [2, 0]]
+          assert h289r['thin_combined_miss_packets'] == [[0, 1], [0, 2]]
+          rreg = {row['p']: row for row in h289r['regressions']}
+          assert rreg[1129]['normal_form']['branch'] == 'thin-NR'
+          assert rreg[10369]['normal_form']['branch'] == 'thin-NR'
+          assert rreg[8689]['normal_form']['branch'] == 'pure-QR'
+          assert rreg[22129]['normal_form']['branch'] == 'outside-TypeII-miss-normal-form'
+
           assert coupling['verified'] is True
           assert coupling['hard_classes'] == [169, 289, 529]
           assert coupling['k11_miss_forces_T_mod11'] == [1, 2, 3, 5, 8]
@@ -173,6 +197,7 @@ jobs:
             /tmp/hard-class-predecessor-seeds.json
             /tmp/h169-h289-h529-k11.json
             /tmp/h289-k19-quotient.json
+            /tmp/h289-k19-residue.json
             /tmp/k11-k19-phase-seed.json
           if-no-files-found: error
           retention-days: 30
