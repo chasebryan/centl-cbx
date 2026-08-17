@@ -42,13 +42,15 @@ check: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i 
 	./cbx-shift-i --hi 100000 --i-max 80 --segment 25000 --verify
 	./cbx-profile-i --hi 100000 --i-max 80 --segment 25000 > /tmp/cbx-check-profile.json
 	./cbx-standalone-i --hi 20000 --i-max 40 --segment 10000 --sets /tmp/cbx-check-sets.tsv > /tmp/cbx-check-standalone.json
-	./cbx-brec-i --hi 20000 --i-max 40 --order 4 --segment 10000 --histories /tmp/cbx-check-brec.tsv > /tmp/cbx-check-brec.json
+	./cbx-brec-i --hi 20000 --i-max 40 --order 8 --segment 10000 --histories /tmp/cbx-check-brec.tsv > /tmp/cbx-check-brec.json
 	grep -q '"mode":"brec-I"' /tmp/cbx-check-brec.json
 	grep -q 'CBX-Lane-I-shift-history-v1' /tmp/cbx-check-brec.json
 	$(PYTHON) -m py_compile analyze.py analyze_geometry.py analyze_layers.py analyze_profile.py analyze_standalone.py analyze_overlap.py analyze_spectrum_overlap.py analyze_brec.py bench_i.py plan_hybrid.py certify_i.py verify_brec_i.py
 	$(PYTHON) verify_brec_i.py /tmp/cbx-check-standalone.json /tmp/cbx-check-brec.json --json > /tmp/cbx-check-brec-verify.json
 	$(PYTHON) analyze_brec.py --self-test >/dev/null
-	$(PYTHON) analyze_brec.py /tmp/cbx-check-brec.json --histories /tmp/cbx-check-brec.tsv --json > /tmp/cbx-check-brec-analysis.json
+	$(PYTHON) analyze_brec.py /tmp/cbx-check-brec.json --histories /tmp/cbx-check-brec.tsv --prefix-depth 6 --json > /tmp/cbx-check-brec-analysis.json
+	grep -q '"prefix_cylinders"' /tmp/cbx-check-brec-analysis.json
+	grep -q '"next_k":23' /tmp/cbx-check-brec-analysis.json
 	$(PYTHON) analyze_geometry.py --self-test
 	./cbx-inverse --hi 20000 --i-max 40 --segment 10000 --layers /tmp/cbx-check-layers.tsv >/dev/null
 	$(PYTHON) analyze_layers.py /tmp/cbx-check-layers.tsv --json >/dev/null
