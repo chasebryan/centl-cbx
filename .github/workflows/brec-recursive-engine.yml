@@ -33,6 +33,7 @@ on:
       - 'kernel/Makefile'
       - 'kernel/BREC-ES-APPLICATION.md'
       - 'kernel/DESIGN-LANGUAGE.md'
+      - 'research/BREC-LANE-I-RECURSIVE-CORRIDOR.md'
       - '.github/workflows/brec-recursive-engine.yml'
   push:
     branches: [main]
@@ -52,7 +53,7 @@ jobs:
     env:
       BREC_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.hi || '20000' }}
       BREC_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '40' }}
-      BREC_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '4' }}
+      BREC_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '8' }}
       BREC_SEGMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.segment || '10000' }}
     steps:
       - name: Install build tools
@@ -112,9 +113,12 @@ jobs:
 
       - name: Analyze recursive history structure
         run: |
+          PREFIX_DEPTH="$BREC_ORDER"
+          if [ "$PREFIX_DEPTH" -gt 6 ]; then PREFIX_DEPTH=6; fi
           python3 kernel/analyze_brec.py \
             /tmp/brec-summary.json \
             --histories /tmp/brec-histories.tsv \
+            --prefix-depth "$PREFIX_DEPTH" \
             --json \
             > /tmp/brec-analysis.json
 
@@ -141,6 +145,8 @@ jobs:
           assert obj['defined_stages'] + obj['undefined_stages'] == obj['stages']
           assert obj['cross']['right_plus'] == obj['constructive']
           assert obj['cross']['left_minus'] == obj['obstructive']
+          assert obj['optimization']['targets'] == '-1,-p^-1'
+          assert obj['optimization']['signed_box_traversals_per_defined_stage'] == 1
           assert obj['motifs']
           assert eq['verified'] is True
           assert eq['constructive'] == obj['constructive']
@@ -148,6 +154,11 @@ jobs:
           assert analysis['hard_primes'] == obj['hard_primes']
           assert analysis['motifs']['cross_check']['right_plus_matches'] is True
           assert analysis['motifs']['cross_check']['left_minus_matches'] is True
+          cylinders = analysis['histories']['prefix_cylinders']
+          assert cylinders['max_depth'] == min(obj['order'], 6)
+          if cylinders['max_depth'] >= 6:
+              split = next(x for x in cylinders['all_negative_splits'] if x['parent'] == '-----')
+              assert split['next_k'] == 23
 
           lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
           assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
