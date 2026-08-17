@@ -6,7 +6,7 @@ PYTHON ?= python3
 
 .PHONY: all clean check
 
-all: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i
+all: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i cbx-brec-i
 	mkdir -p state observations letters
 
 cbx: src/cbx_runtime.c src/cbx.c
@@ -28,8 +28,12 @@ cbx-profile-i: src/cbx_profile_i.c src/cbx.c
 cbx-standalone-i: src/cbx_standalone_i.c src/cbx.c
 	$(CC) $(CFLAGS) -o $@ src/cbx_standalone_i.c $(LDFLAGS) $(LDLIBS)
 
-check: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i
+cbx-brec-i: src/cbx_brec_i.c src/cbx.c
+	$(CC) $(CFLAGS) -o $@ src/cbx_brec_i.c $(LDFLAGS) $(LDLIBS)
+
+check: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i cbx-brec-i
 	./cbx self-test
+	./cbx-brec-i --self-test
 	./cbx probe 1009
 	./cbx probe 2521
 	./cbx probe 9658489
@@ -38,6 +42,9 @@ check: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i
 	./cbx-shift-i --hi 100000 --i-max 80 --segment 25000 --verify
 	./cbx-profile-i --hi 100000 --i-max 80 --segment 25000 > /tmp/cbx-check-profile.json
 	./cbx-standalone-i --hi 20000 --i-max 40 --segment 10000 --sets /tmp/cbx-check-sets.tsv > /tmp/cbx-check-standalone.json
+	./cbx-brec-i --hi 20000 --i-max 40 --order 4 --segment 10000 --histories /tmp/cbx-check-brec.tsv > /tmp/cbx-check-brec.json
+	grep -q '"mode":"brec-I"' /tmp/cbx-check-brec.json
+	grep -q 'CBX-Lane-I-shift-history-v1' /tmp/cbx-check-brec.json
 	$(PYTHON) -m py_compile analyze.py analyze_geometry.py analyze_layers.py analyze_profile.py analyze_standalone.py analyze_overlap.py analyze_spectrum_overlap.py bench_i.py plan_hybrid.py certify_i.py
 	$(PYTHON) analyze_geometry.py --self-test
 	./cbx-inverse --hi 20000 --i-max 40 --segment 10000 --layers /tmp/cbx-check-layers.tsv >/dev/null
@@ -50,12 +57,12 @@ check: cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i
 	$(PYTHON) plan_hybrid.py /tmp/cbx-check-profile-analysis.json --c-retention 0.10 --json >/dev/null
 	$(PYTHON) bench_i.py --hi 20000 --i-max 40 --repeat 1 --no-verify --json >/dev/null
 	$(PYTHON) certify_i.py --hi 20000 --i-max 80 --segment 10000 --json >/dev/null
-	rm -f /tmp/cbx-check-layers.tsv /tmp/cbx-check-profile.json /tmp/cbx-check-profile-analysis.json /tmp/cbx-check-standalone.json /tmp/cbx-check-sets.tsv
+	rm -f /tmp/cbx-check-layers.tsv /tmp/cbx-check-profile.json /tmp/cbx-check-profile-analysis.json /tmp/cbx-check-standalone.json /tmp/cbx-check-sets.tsv /tmp/cbx-check-brec.json /tmp/cbx-check-brec.tsv
 	rm -f state/check.seed observations/check.jsonl
 	./cbx go --run check --step 1000 --iterations 2 --sweep-only
 	test "$$(sed -n 's/^sweep=//p' state/check.seed)" = "2000"
 	rm -f state/check.seed observations/check.jsonl
 
 clean:
-	rm -f cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i
+	rm -f cbx cbx-inverse cbx-forward-i cbx-shift-i cbx-profile-i cbx-standalone-i cbx-brec-i
 	rm -rf __pycache__
