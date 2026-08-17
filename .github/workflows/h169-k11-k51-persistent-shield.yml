@@ -1,0 +1,71 @@
+name: h169 k11 k51 persistent shield cycle
+
+on:
+  pull_request:
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-PERSISTENT-SHIELD-CYCLE.md'
+      - '.github/workflows/h169-k11-k51-persistent-shield.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
+      - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/H169-K11-T0-K51-JACOBI-NORMAL-FORM.md'
+      - 'research/H169-K11-T0-K51-PERSISTENT-SHIELD-CYCLE.md'
+      - '.github/workflows/h169-k11-k51-persistent-shield.yml'
+
+jobs:
+  exact-persistent-shield:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile verifiers
+        run: |
+          python3 -m py_compile \
+            research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
+            research/verify_h169_k11_t0_k51_persistent_shield_cycle.py
+
+      - name: Verify persistent shield cycle
+        run: |
+          python3 research/verify_h169_k11_t0_k51_persistent_shield_cycle.py \
+            > /tmp/h169-k51-persistent-shield.json
+
+      - name: Validate exact persistence certificate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-k51-persistent-shield.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'h169-k11-t0-k51-persistent-shield-cycle'
+          assert obj['canonical_normal_form'] == 'h169-k11-t0-k51-jacobi-normal-form'
+          assert obj['seed'] == [5, 11]
+          assert obj['repeated_factor'] == 11
+          assert obj['H51_order'] == 16
+          assert obj['additional_factor11_occurrences_to_saturate_H51'] == 4
+          assert obj['total_v11_at_H51_saturation'] == 5
+          assert obj['exact_state_period_after_saturation'] == 16
+          assert obj['cycle_start_additional_occurrences'] == 4
+          assert obj['cycle_return_additional_occurrences'] == 20
+          assert obj['cycle_start_total_v11'] == 5
+          assert obj['cycle_return_total_v11'] == 21
+          assert obj['all_saturated_cycle_states_are_combined_misses'] is True
+          assert obj['local_v11_ceiling'] is None
+          PY
+
+      - name: Preserve exact proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-k11-k51-persistent-shield-cycle
+          path: /tmp/h169-k51-persistent-shield.json
+          if-no-files-found: error
+          retention-days: 30
