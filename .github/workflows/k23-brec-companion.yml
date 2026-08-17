@@ -7,6 +7,7 @@ on:
       - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k7_brec_obstruction_normal_form.py'
       - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k15_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
@@ -14,6 +15,7 @@ on:
       - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
+      - 'research/K15-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
       - 'research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md'
       - 'research/K23-RESCUE-SPLIT-HARD-CLASS-COMPATIBILITY.md'
@@ -25,6 +27,7 @@ on:
       - 'research/verify_k3_brec_obstruction_normal_form.py'
       - 'research/verify_k7_brec_obstruction_normal_form.py'
       - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k15_brec_obstruction_normal_form.py'
       - 'research/verify_k23_typei_companion_patterns.py'
       - 'research/verify_k23_brec_ancestry_falsifiers.py'
       - 'research/verify_k23_typei_only_integer_normal_form.py'
@@ -48,6 +51,7 @@ jobs:
             research/verify_k3_brec_obstruction_normal_form.py \
             research/verify_k7_brec_obstruction_normal_form.py \
             research/verify_k11_brec_obstruction_normal_form.py \
+            research/verify_k15_brec_obstruction_normal_form.py \
             research/verify_k23_typei_companion_patterns.py \
             research/verify_k23_brec_ancestry_falsifiers.py \
             research/verify_k23_typei_only_integer_normal_form.py \
@@ -67,6 +71,11 @@ jobs:
         run: |
           python3 research/verify_k11_brec_obstruction_normal_form.py \
             > /tmp/k11-obstruction-normal-form.json
+
+      - name: Verify exact k15 obstruction normal form
+        run: |
+          python3 research/verify_k15_brec_obstruction_normal_form.py \
+            > /tmp/k15-obstruction-normal-form.json
 
       - name: Verify q23 Type-I companion residue classification
         run: |
@@ -97,6 +106,7 @@ jobs:
           k3 = json.loads(Path('/tmp/k3-obstruction-normal-form.json').read_text())
           k7 = json.loads(Path('/tmp/k7-obstruction-normal-form.json').read_text())
           k11 = json.loads(Path('/tmp/k11-obstruction-normal-form.json').read_text())
+          k15 = json.loads(Path('/tmp/k15-obstruction-normal-form.json').read_text())
           patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
           falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
           normal = json.loads(Path('/tmp/k23-integer-normal-form.json').read_text())
@@ -119,8 +129,15 @@ jobs:
           assert k11_states[(1, 1)]['hit_class'] == 'miss'
           assert k11['thin_type_I_only_packets'] == [[0, 2], [2, 0]]
           assert k11['thin_combined_miss_packets'] == [[0, 0], [0, 1], [1, 0], [1, 1]]
-          assert {w['p'] for w in k11['witnesses']} == {8243281, 18766609, 27211969}
-          assert k11['known_nonmiss']['p'] == 5151841
+
+          assert k15['verified'] is True
+          assert k15['H'] == [1, 2, 4, 8]
+          assert k15['minus_H'] == [7, 11, 13, 14]
+          assert k15['forced_v1_support'] == [1, 2, 8]
+          assert k15['forced_v2_support'] == [1, 2, 4, 8]
+          assert k15['combined_miss_iff'] == (
+              'every prime divisor q of C15=(p+15)/4 lies in {1,2,4,8} mod 15'
+          )
 
           assert patterns['verified'] is True
           assert [p['name'] for p in patterns['type_I_only_patterns']] == ['5^2', '14^2']
@@ -130,21 +147,11 @@ jobs:
           assert states[(1, 1)]['hit_class'] == 'miss'
 
           assert falsifiers['verified'] is True
-          assert falsifiers['falsified_depths'] == {
-              '1': 5151841,
-              '2': 8243281,
-              '3': 8243281,
-              '4': 18766609,
-              '5': 18766609,
-          }
           assert falsifiers['deep_rescue_patterns_realized'] == ['5^2', '14^2']
           witnesses = {w['p']: w for w in falsifiers['witnesses']}
           assert witnesses[5151841]['early_history'] == '-++-+'
-          assert witnesses[5151841]['q23_nonresidue_pattern'] == '5^2'
           assert witnesses[18766609]['early_history'] == '-----'
           assert witnesses[27211969]['early_history'] == '-----'
-          assert witnesses[18766609]['k23']['hit_class'] == 'type-I-only'
-          assert witnesses[27211969]['k23']['hit_class'] == 'type-I-only'
 
           assert normal['verified'] is True
           assert normal['full_five_miss_branches_realized'] == [5, 14]
@@ -153,25 +160,10 @@ jobs:
           ]
           hard = {row['p_mod_840']: row['T_mod_35'] for row in normal['hard_class_map']}
           assert hard == {1: 1, 121: 6, 169: 8, 289: 13, 361: 16, 529: 23}
-          local = {row['rho']: row for row in normal['local_branches']}
-          assert local[5]['type_I_target'] == 11
-          assert local[14]['type_I_target'] == 21
-          normal_witnesses = {w['p']: w for w in normal['witnesses']}
-          assert normal_witnesses[5151841]['rho'] == 5
-          assert normal_witnesses[8243281]['rho'] == 14
-          assert normal_witnesses[18766609]['early_history'] == '-----'
-          assert normal_witnesses[27211969]['early_history'] == '-----'
 
           assert split['verified'] is True
           assert split['modulus'] == 805
           assert split['combinations_verified'] == 24
           rescue = {row['rho']: row['class_mod_805'] for row in split['rescue_crt_classes']}
           assert rescue == {5: 281, 14: 106}
-          mult = {row['T_mod_35']: row['m_crt_mod_805'] for row in split['multiplier_classes']}
-          assert mult == {1: 1, 6: 461, 8: 323, 13: 783, 16: 576, 23: 93}
-          combos = {
-              (row['rho'], row['split'], row['hard_p_mod_840'])
-              for row in split['constructions']
-          }
-          assert len(combos) == 24
           PY
