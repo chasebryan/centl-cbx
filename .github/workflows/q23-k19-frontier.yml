@@ -53,12 +53,12 @@ jobs:
         shell: bash
         run: |
           args=(
-            --p-hi "$FRONTIER_P_HI"
-            --prefix '----'
+            "--p-hi=$FRONTIER_P_HI"
+            "--prefix=----"
             --json
           )
           if [[ -n "$FRONTIER_BRANCH" ]]; then
-            args+=(--branch-class "$FRONTIER_BRANCH")
+            args+=("--branch-class=$FRONTIER_BRANCH")
           fi
           python3 research/analyze_q23_rescue_k19_frontier.py "${args[@]}" \
             > /tmp/q23-k19-frontier.json
