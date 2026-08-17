@@ -29,8 +29,8 @@ Moreover these exceptions are exact:
     gcd(R,C11)=gcd(R,C31)=5 iff u=2 mod5, otherwise1.
 
 Thus every prime q>11 in the k51 residual R is absent from every other
-companion C_k with k=3,7,...,55, k!=51.  In fact every q>5 is absent except
-that q=11 may overlap C7.  This is a simultaneous support-isolation theorem,
+companion C_k with k=3,7,...,55, k!=51. In fact every q>5 is absent except
+that q=11 may overlap C7. This is a simultaneous support-isolation theorem,
 not a termination theorem.
 """
 
@@ -49,6 +49,7 @@ EXPECTED_EXCEPTION_SUPPORT = {
     11: {5},
     31: {5},
 }
+EXPECTED_CANONICAL_C51_IDENTITY = "if t=11u then C51=55(1+42u)"
 
 
 def factorint(n: int) -> dict[int, int]:
@@ -118,7 +119,6 @@ def verify_symbolic_table() -> list[dict[str, Any]]:
 
 
 def verify_exact_exceptions() -> dict[str, Any]:
-    # The congruence conditions are derived directly from R=1+42u.
     # mod11: 42=9, so R=0 iff u=6.
     for u in range(11):
         want = 11 if u == 6 else 1
@@ -126,7 +126,7 @@ def verify_exact_exceptions() -> dict[str, Any]:
         if got != want:
             raise SystemExit(f"k7 exact gcd failed at u={u}: {got} != {want}")
 
-    # mod5: 42=2, so R=0 iff u=2.  Both C11 and C31 have a
+    # mod5: 42=2, so R=0 iff u=2. Both C11 and C31 have a
     # permanent factor5, while the determinant has only one factor5.
     for k in (11, 31):
         for u in range(5):
@@ -137,9 +137,9 @@ def verify_exact_exceptions() -> dict[str, Any]:
                     f"k{k} exact gcd failed at u={u}: {got} != {want}"
                 )
 
-    # All other shifts are symbolically coprime for every u.  A full residue
-    # sweep modulo the determinant radical is only a regression check; the
-    # theorem itself is the Euclidean identity plus R mod2,3,7.
+    # All other shifts are symbolically coprime for every u. A full residue
+    # sweep modulo the determinant radical is a regression check; the theorem
+    # itself is the Euclidean identity plus R mod2,3,7.
     for k in OTHER_SHIFTS:
         if k in EXPECTED_EXCEPTION_SUPPORT:
             continue
@@ -191,8 +191,10 @@ def verify() -> dict[str, Any]:
     phase = canonical["phase"]
     if phase["t_mod_11"] != 0:
         raise SystemExit("canonical k51 t11 phase changed")
-    if phase["C51_identity"] != "55R":
-        raise SystemExit("canonical k51 residual identity changed")
+    if phase["C51_identity"] != EXPECTED_CANONICAL_C51_IDENTITY:
+        raise SystemExit(
+            f"canonical k51 residual identity changed: {phase['C51_identity']}"
+        )
     if phase["forced_factor_occurrences"] != [5, 11]:
         raise SystemExit("canonical k51 hard-class seed changed")
 
@@ -212,6 +214,7 @@ def verify() -> dict[str, Any]:
         "verified": True,
         "mode": "h169-k11-t0-k51-residual-support-isolation",
         "canonical_k51_normal_form": canonical["mode"],
+        "canonical_C51_identity": phase["C51_identity"],
         "parameterization": {
             "t": "11u",
             "R": "1+42u",
@@ -232,7 +235,7 @@ def verify() -> dict[str, Any]:
         "character_compatibility_of_exceptions": character_check,
         "strong_support_consequence": (
             "Every prime q>11 dividing the k51 residual R is absent from every "
-            "other Lane-I companion C_k for k=3,7,...,55, k!=51.  More sharply, "
+            "other Lane-I companion C_k for k=3,7,...,55, k!=51. More sharply, "
             "the only shared residual prime support anywhere in that window is "
             "11 with C7 and 5 with C11/C31, under their stated exact u phases."
         ),
@@ -240,13 +243,13 @@ def verify() -> dict[str, Any]:
             "On the h169 inherited-k11 child t=0 mod11, with t=11u and C51=55R, "
             "the residual R is coprime to C3,C15,C19,C23,C27,C35,C39,C43,C47,C55; "
             "gcd(R,C7) is 11 exactly when u=6 mod11; and gcd(R,C11)=gcd(R,C31) "
-            "is 5 exactly when u=2 mod5.  No other prime support can be shared "
+            "is 5 exactly when u=2 mod5. No other prime support can be shared "
             "between R and the Lane-I companion window through k55."
         ),
         "claim_boundary": (
-            "Exact Euclidean support-isolation theorem.  It does not force an "
+            "Exact Euclidean support-isolation theorem. It does not force an "
             "outside-H51 factor into R and therefore does not kill the persistent "
-            "k51 Jacobi shield by itself.  It proves that any large-prime H51 escape "
+            "k51 Jacobi shield by itself. It proves that any large-prime H51 escape "
             "support in R is private to C51 within the early companion window."
         ),
     }
