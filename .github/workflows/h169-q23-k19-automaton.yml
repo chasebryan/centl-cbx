@@ -1,0 +1,95 @@
+name: h169 q23 k19 automaton frontier
+
+on:
+  workflow_dispatch:
+    inputs:
+      p_hi:
+        description: Prime ceiling for h169 q23 rescue scan
+        required: true
+        default: '100000000'
+        type: string
+      prefix:
+        description: Required anchored BREC prefix before/through k19
+        required: true
+        default: '----'
+        type: string
+  pull_request:
+    paths:
+      - 'research/classify_signed_box_residue_automaton.py'
+      - 'research/search_q23_typei_rescue_branch.py'
+      - 'research/analyze_h169_q23_k19_automaton_realization.py'
+      - 'research/SIGNED-BOX-RESIDUE-AUTOMATON.md'
+      - '.github/workflows/h169-q23-k19-automaton.yml'
+
+jobs:
+  exact-h169-realization:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      H169_P_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.p_hi || '30000000' }}
+      H169_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.prefix || '----' }}
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact state tools
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/classify_signed_box_residue_automaton.py \
+            research/search_q23_typei_rescue_branch.py \
+            research/analyze_h169_q23_k19_automaton_realization.py
+
+      - name: Residue automaton regression self-test
+        run: python3 research/classify_signed_box_residue_automaton.py --self-test
+
+      - name: Forward q23 branch self-test
+        run: python3 research/search_q23_typei_rescue_branch.py --self-test
+
+      - name: h169 automaton mapper self-test
+        run: python3 research/analyze_h169_q23_k19_automaton_realization.py --self-test
+
+      - name: Run h169 arithmetic-realization frontier
+        run: |
+          python3 research/analyze_h169_q23_k19_automaton_realization.py \
+            --p-hi "$H169_P_HI" \
+            --prefix "$H169_PREFIX" \
+            --json \
+            > /tmp/h169-q23-k19-automaton.json
+
+      - name: Validate exact layer separation
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/h169-q23-k19-automaton.json').read_text())
+          assert obj['mode'] == 'analyze-h169-q23-k19-automaton-realization'
+          assert obj['hard_class_mod_840'] == 169
+          assert obj['M_mod_35'] == 8
+          assert obj['required_prefix'] == os.environ['H169_PREFIX']
+          assert obj['q19_automaton']['type_II_miss_states'] == (
+              obj['q19_automaton']['combined_miss_state_count']
+              + obj['q19_automaton']['type_I_only_state_count']
+          )
+          assert obj['realized_distinct_type_II_miss_states'] <= (
+              obj['q19_automaton']['type_II_miss_states']
+          )
+          for row in obj['realized_states']:
+              assert row['realized_class'] in ('combined-miss', 'type-I-only')
+              assert row['C_mod_19'] in range(1, 19)
+
+          if int(os.environ['H169_P_HI']) == 30_000_000 and os.environ['H169_PREFIX'] == '----':
+              assert obj['realized_candidate_classes'].get('combined-miss', 0) >= 2
+          PY
+
+      - name: Preserve h169 automaton frontier
+        uses: actions/upload-artifact@v4
+        with:
+          name: h169-q23-k19-automaton-${{ env.H169_P_HI }}
+          path: /tmp/h169-q23-k19-automaton.json
+          if-no-files-found: error
+          retention-days: 30
