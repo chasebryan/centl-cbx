@@ -9,6 +9,7 @@ on:
       - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
       - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
       - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
       - 'research/analyze_h169_cross_obligation_core.py'
       - 'research/H169-CROSS-OBLIGATION-CORE.md'
       - '.github/workflows/h169-cross-obligation-core.yml'
@@ -21,6 +22,7 @@ on:
       - 'research/verify_h169_k11_t2_k43_seeded_shell.py'
       - 'research/verify_h169_k11_t0_k51_jacobi_normal_form.py'
       - 'research/verify_h169_k11_t0_k51_persistent_shield_cycle.py'
+      - 'research/verify_h169_k11_t0_k51_residual_support_isolation.py'
       - 'research/analyze_h169_cross_obligation_core.py'
       - 'research/H169-CROSS-OBLIGATION-CORE.md'
       - '.github/workflows/h169-cross-obligation-core.yml'
@@ -44,6 +46,7 @@ jobs:
             research/verify_h169_k11_t2_k43_seeded_shell.py \
             research/verify_h169_k11_t0_k51_jacobi_normal_form.py \
             research/verify_h169_k11_t0_k51_persistent_shield_cycle.py \
+            research/verify_h169_k11_t0_k51_residual_support_isolation.py \
             research/analyze_h169_cross_obligation_core.py
 
       - name: Run cross-core self-test
@@ -75,7 +78,7 @@ jobs:
           k43 = json.loads(Path('/tmp/h169-cross-k43.json').read_text())
           k51 = json.loads(Path('/tmp/h169-cross-k51.json').read_text())
 
-          assert bad['analysis'] == 'h169-cross-obligation-core-v4'
+          assert bad['analysis'] == 'h169-cross-obligation-core-v5'
           assert bad['base_surviving_formal_tuples'] == 147900
           assert bad['cross_surviving_formal_tuples'] == 0
           assert bad['contradiction'] is True
@@ -95,14 +98,14 @@ jobs:
               'k19-bare-excludes-factor11-in-R',
           }
 
-          assert live['analysis'] == 'h169-cross-obligation-core-v4'
+          assert live['analysis'] == 'h169-cross-obligation-core-v5'
           obligations = live['obligations']
           assert obligations['forced']['t_mod_11'] == 8
           assert obligations['forced']['factor11_in_R'] is True
           assert obligations['forced']['k19_mode'] == 'FULL_QR'
           assert obligations['factor11_obligation']['k19_TypeII_miss_max_Omega_NR'] == 2
 
-          assert k43['analysis'] == 'h169-cross-obligation-core-v4'
+          assert k43['analysis'] == 'h169-cross-obligation-core-v5'
           r = k43['obligations']['k43_seed_obligation']
           assert r['source_theorem'] == 'h169-k11-t2-k43-seeded-shell'
           assert r['forced_signed_support'] == [1, 4, 11]
@@ -112,10 +115,11 @@ jobs:
           assert r['additional_factor_residues_forcing_TypeII'] == [32, 39, 42]
           assert r['combined_miss_excluded_t_mod_43'] == 9
 
-          assert k51['analysis'] == 'h169-cross-obligation-core-v4'
+          assert k51['analysis'] == 'h169-cross-obligation-core-v5'
           r = k51['obligations']['k51_jacobi_obligation']
           assert r['source_theorem'] == 'h169-k11-t0-k51-jacobi-normal-form'
           assert r['persistence_theorem'] == 'h169-k11-t0-k51-persistent-shield-cycle'
+          assert r['support_isolation_theorem'] == 'h169-k11-t0-k51-residual-support-isolation'
           assert r['forced_factor_occurrences'] == [5, 11]
           assert r['seed55_TypeII_miss_states'] == 86
           assert r['seed55_combined_miss_states'] == 26
@@ -127,6 +131,10 @@ jobs:
           assert r['total_v11_at_H51_saturation'] == 5
           assert r['persistent_cycle_length'] == 16
           assert r['local_v11_ceiling'] is None
+          assert r['residual_always_coprime_companions_through_k55'] == [3,15,19,23,27,35,39,43,47,55]
+          assert r['residual_only_possible_shared_prime_support'] == {
+              'C7': [11], 'C11': [5], 'C31': [5]
+          }
           PY
 
       - name: Preserve explanation artifacts
