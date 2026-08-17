@@ -1,6 +1,28 @@
 name: BREC recursive engine
 
 on:
+  workflow_dispatch:
+    inputs:
+      hi:
+        description: Highest integer in the finite prime census
+        required: true
+        default: '2000000'
+        type: string
+      i_max:
+        description: Largest Lane-I shift k
+        required: true
+        default: '80'
+        type: string
+      order:
+        description: Recursive BREC motif order
+        required: true
+        default: '8'
+        type: string
+      segment:
+        description: Finite census segment width
+        required: true
+        default: '250000'
+        type: string
   pull_request:
     paths:
       - 'kernel/src/cbx_brec_i.c'
@@ -27,11 +49,31 @@ jobs:
   exact-brec:
     runs-on: ubuntu-latest
     container: fedora:latest
+    env:
+      BREC_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.hi || '20000' }}
+      BREC_I_MAX: ${{ github.event_name == 'workflow_dispatch' && inputs.i_max || '40' }}
+      BREC_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '4' }}
+      BREC_SEGMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.segment || '10000' }}
     steps:
       - name: Install build tools
         run: dnf -y install git gcc make python3
 
       - uses: actions/checkout@v4
+
+      - name: Validate requested finite grade
+        run: |
+          python3 - <<'PY'
+          import os
+
+          hi = int(os.environ['BREC_HI'])
+          i_max = int(os.environ['BREC_I_MAX'])
+          order = int(os.environ['BREC_ORDER'])
+          segment = int(os.environ['BREC_SEGMENT'])
+          assert hi >= 2
+          assert i_max >= 3
+          assert 1 <= order <= 16
+          assert 1 <= segment <= 100_000_000
+          PY
 
       - name: Build BREC and reference engines
         run: make -C kernel cbx-brec-i cbx-standalone-i
@@ -45,18 +87,18 @@ jobs:
       - name: Finite reference census
         run: |
           kernel/cbx-standalone-i \
-            --hi 20000 \
-            --i-max 40 \
-            --segment 10000 \
+            --hi "$BREC_HI" \
+            --i-max "$BREC_I_MAX" \
+            --segment "$BREC_SEGMENT" \
             > /tmp/standalone-summary.json
 
-      - name: Finite recursive census smoke test
+      - name: Finite recursive census
         run: |
           kernel/cbx-brec-i \
-            --hi 20000 \
-            --i-max 40 \
-            --order 4 \
-            --segment 10000 \
+            --hi "$BREC_HI" \
+            --i-max "$BREC_I_MAX" \
+            --order "$BREC_ORDER" \
+            --segment "$BREC_SEGMENT" \
             --histories /tmp/brec-histories.tsv \
             > /tmp/brec-summary.json
 
@@ -80,6 +122,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           obj = json.loads(Path('/tmp/brec-summary.json').read_text())
@@ -88,9 +131,12 @@ jobs:
           assert obj['mode'] == 'brec-I'
           assert obj['brec_spec'] == 'BREC-v1.0'
           assert obj['application'] == 'CBX-Lane-I-shift-history-v1'
-          assert obj['order'] == 4
-          assert obj['formal_nonempty_histories_through_order'] == 30
-          assert obj['formal_histories_including_epsilon'] == 31
+          assert obj['order'] == int(os.environ['BREC_ORDER'])
+          assert obj['hi'] == int(os.environ['BREC_HI'])
+          assert obj['i_max'] == int(os.environ['BREC_I_MAX'])
+          expected_nonempty = (1 << (obj['order'] + 1)) - 2
+          assert obj['formal_nonempty_histories_through_order'] == expected_nonempty
+          assert obj['formal_histories_including_epsilon'] == expected_nonempty + 1
           assert obj['constructive'] + obj['obstructive'] == obj['defined_stages']
           assert obj['defined_stages'] + obj['undefined_stages'] == obj['stages']
           assert obj['cross']['right_plus'] == obj['constructive']
@@ -108,9 +154,31 @@ jobs:
           assert len(lines) == obj['hard_primes'] + 1
           PY
 
+      - name: Write finite census manifest
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = {
+              'application': 'CBX-Lane-I-shift-history-v1',
+              'hi': int(os.environ['BREC_HI']),
+              'i_max': int(os.environ['BREC_I_MAX']),
+              'order': int(os.environ['BREC_ORDER']),
+              'segment': int(os.environ['BREC_SEGMENT']),
+              'commit': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+          }
+          Path('/tmp/brec-manifest.json').write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + '\n'
+          )
+          PY
+
       - name: Stage finite research artifacts
         run: |
           mkdir -p /tmp/brec-artifacts
+          cp /tmp/brec-manifest.json /tmp/brec-artifacts/
           cp /tmp/standalone-summary.json /tmp/brec-artifacts/
           cp /tmp/brec-summary.json /tmp/brec-artifacts/
           cp /tmp/brec-histories.tsv /tmp/brec-artifacts/
@@ -120,7 +188,7 @@ jobs:
       - name: Preserve finite BREC census
         uses: actions/upload-artifact@v4
         with:
-          name: brec-finite-census
+          name: brec-finite-census-${{ env.BREC_HI }}-K${{ env.BREC_I_MAX }}-N${{ env.BREC_ORDER }}
           path: /tmp/brec-artifacts
           if-no-files-found: error
           retention-days: 30
