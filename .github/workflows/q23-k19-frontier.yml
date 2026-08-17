@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:latest
     env:
-      FRONTIER_P_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.p_hi || '30000000' }}
+      FRONTIER_P_HI: ${{ github.event_name == 'workflow_dispatch' && inputs.p_hi || '100000000' }}
       FRONTIER_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch_class || '' }}
     steps:
       - name: Install Python
