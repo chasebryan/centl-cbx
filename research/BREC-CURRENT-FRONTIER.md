@@ -27,222 +27,237 @@ W -> I -> N -> L
 
 BREC does not create pruning authority by itself.
 
-The active engine/analyzer chain is:
+The optimized BREC evaluator is independently checked against `cbx-standalone-i`. Active experiments include small-prime stripping, admissible target collapse, one signed-box traversal for both exact targets, and a cofactor prestrip prototype.
+
+## 2. q23 Type-I-only target normal form
+
+For a Mordell-hard prime rescued by Type I but not Type II at `k=23`, write
 
 ```text
-kernel/src/cbx_brec_i.c
-kernel/verify_brec_i.py
-kernel/analyze_brec.py
-kernel/analyze_brec_cylinder.py
-kernel/analyze_brec_target.py
+T = (p+23)/24.
 ```
 
-The optimized BREC evaluator is independently checked against `cbx-standalone-i` and currently uses:
+Then
 
 ```text
-small-prime stripping before Pollard-rho
-admissible target collapse to {-1,-p^(-1)}
-one signed-box traversal for both targets
-prime p>K coprimality shortcut
+C23 = 6T,
+p   = 24T-23,
+T   = mR,
 ```
 
-## 2. Canonical finite development census
-
-The preserved two-million-prime development corpus used:
+where
 
 ```text
-p <= 2,000,000
-k <= 80
-BREC order = 8
+every prime divisor of m is 1 mod 23,
+Omega(R)=2,
+all prime valuations of R lie in one class rho in {5,14} mod 23.
 ```
 
-with exactly:
+The two local rescue branches are exactly the same-class valuation-two states `5^2` and `14^2`.
+
+The square and distinct-semiprime realizations of `R` are both locally compatible with all six Mordell-hard classes. Hard classes alone therefore cannot eliminate either split.
+
+## 3. Exact predecessor corridor
+
+The five earlier Lane-I coordinates are
 
 ```text
-4519 Mordell-hard primes
-90,380 target stages
-90,380 exact factorizations
-37,146 constructive stages
-53,234 obstructive stages
-0 undefined stages
+C3  = 6T-5,
+C7  = 2(3T-2),
+C11 = 3(2T-1),
+C15 = 2(3T-1),
+C19 = 6T-1.
 ```
 
-The optimized BREC engine and standalone exact Lane-I reference agreed on the full finite grade.
+Every predecessor now has an exact normal-form language.
 
-These are regression facts, not universal statements.
-
-## 3. Anchored ancestry versus sliding motifs
-
-BREC now keeps two notions separate:
+### k=3
 
 ```text
-sliding motif   = a +/- word occurring anywhere in a history
-anchored prefix = a +/- word beginning at absolute shift k=3
+MISS iff every prime divisor of 6T-5 is 1 mod 3.
 ```
 
-For example, anchored
+### k=7
 
 ```text
------
+MISS iff every prime divisor of 3T-2 is in {1,2,4} mod 7.
 ```
 
-means exact combined misses at
+Type I and Type II have identical hit/miss status for Mordell-hard primes at this shift.
+
+### k=11
+
+Combined miss is either pure QR splitting modulo 11 or the exact thin primitive packet over residue classes `(2,6)` with packet
 
 ```text
-k = 3, 7, 11, 15, 19.
+(1,0), (0,1), or (1,1).
 ```
 
-This distinction is required for fixed-shift theorem work.
+The same-class valuation-two packets `(2,0)` and `(0,2)` are Type-I-only rescues.
 
-## 4. Important falsification at k=23
+### k=15
 
-The first `p <= 2,000,000` corpus showed no one-sided Type-I / Type-II state at fixed `k=23` after one or more all-negative ancestors.
-
-That exact finite pattern does **not** generalize.
-
-Explicit exact Type-I-only witnesses include:
+With
 
 ```text
-p =  5,151,841   early history -++-+
-p =  8,243,281   early history ---++
-p = 18,766,609   early history -----
-p = 27,211,969   early history -----
+H=<2>={1,2,4,8} in U(15),
 ```
-
-Therefore no all-negative prefix of depths `1..5` forces Type-I / Type-II target coincidence at `k=23`.
-
-Permanent falsifier guard:
 
 ```text
-research/verify_k23_brec_ancestry_falsifiers.py
+MISS iff every prime divisor of 3T-1 lies in H mod 15.
 ```
 
-The discarded finite coincidence is documented, rather than hidden, in:
+### k=19
+
+Write each prime valuation of `6T-1` as a discrete-log atom `a_i` to base `2` modulo 19. Define
 
 ```text
-research/K23-BREC-TWO-TARGET-COINCIDENCE.md
+c = sum a_i mod 18,
+S = sum {-a_i,0,+a_i} in Z/18Z.
 ```
 
-## 5. Exact k=3 obstruction theorem
-
-For every Mordell-hard prime:
+The targets are
 
 ```text
-p = 1 mod 3.
+Type II exponent = 9,
+Type I exponent  = 7-c mod18.
 ```
 
-At `k=3`, Type I and Type II coincide at target `2 mod 3`. Hence:
+Exact combined miss is
 
 ```text
-sigma_3(p) = -
-iff
-every prime divisor of C_3=(p+3)/4 is 1 mod 3.
+9 not in S and 7-c not in S.
 ```
 
-Files:
+Exhaustive state closure gives
+
+```text
+439 reachable cyclic states,
+136 combined-miss states,
+max canonical atoms for any state = 4,
+max canonical atoms for a miss     = 3.
+```
+
+The atom bound is state complexity, not a bound on `Omega(C19)`.
+
+## 4. Pairwise-coprime predecessor core
+
+After removing the forced factors from k7/k11/k15, define
+
+```text
+A=6T-5,
+B=3T-2,
+C=2T-1,
+D=3T-1,
+E=6T-1.
+```
+
+These five forms are pairwise coprime for every integer `T`.
+
+Exact cancellations are
+
+```text
+A-2B=-1
+A-3C=-2
+A-2D=-3
+A-E=-4
+2B-3C=-1
+B-D=-1
+2B-E=-3
+3C-2D=-1
+3C-E=-2
+2D-E=-1.
+```
+
+Parity and the fixed `1 mod3` residues remove the possible factors 2 and 3 in the non-unit rows. Therefore no cross-coordinate contradiction can rely on one prime being shared by two reduced predecessor forms.
+
+## 5. Mandatory full-corridor regression witnesses
+
+Two exact primes realize all five predecessor misses and then a Type-I-only construction at k23:
+
+```text
+p = 18,766,609    rho=14
+p = 27,211,969    rho=5
+```
+
+Both have
+
+```text
+early BREC history = -----
+k23 hit class       = Type-I-only.
+```
+
+Any proposed incompatibility theorem for the five predecessor laws is false unless it includes additional hypotheses that preserve these verified states correctly.
+
+## 6. Current finite q23 -> k19 frontier
+
+At the preserved finite grade
+
+```text
+p <= 30,000,000,
+q23 Type-I-only,
+anchored predecessor prefix ----,
+```
+
+there are exactly three candidates in the current forward census:
+
+```text
+p=18,766,609    -----    k19 miss          q23 rho=14
+p=25,180,849    ----+    k19 Type-II-only  q23 rho=14
+p=27,211,969    -----    k19 miss          q23 rho=5.
+```
+
+Thus the first four exact predecessor obstructions plus the q23 rescue grammar collapse the 30M branch to three primes, and k19 removes one of them.
+
+This is finite compression only. It is not a universal three-candidate theorem.
+
+The frontier analyzer now projects every candidate into the exact 439-state k19 automaton, including canonical state depth and atom representatives, so the finite q23 frontier can be compared directly with the 136 universal fixed-shift miss states.
+
+## 7. Exact synthesis files
+
+The current proof objects are:
 
 ```text
 research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md
-research/verify_k3_brec_obstruction_normal_form.py
+research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K15-BREC-OBSTRUCTION-NORMAL-FORM.md
+research/K19-BREC-CYCLIC-STATE-COMPRESSION.md
+research/K23-TYPEI-ONLY-INTEGER-NORMAL-FORM.md
+research/K23-PREDECESSOR-CORRIDOR-NORMAL-FORMS.md
+research/K23-PREDECESSOR-CORE-PAIRWISE-COPRIME.md
 ```
 
-This is an exact first-coordinate theorem.
+with independent executable verifiers beside them.
 
-## 6. Exact q=23 Type-I companion normal form
+## 8. Active proof target
 
-Conditional on the established q23 Type-II miss normal form, the Type-I companion reduces to six residue states in primitive nonresidue classes `5` and `14` with total valuation at most two.
+The next target is **cross-coordinate compatibility**, not another isolated fixed-shift filter.
 
-Exact exhaustion gives Type-I-only rescue **only** for:
+The exact object is
 
 ```text
-5^2
-14^2
+T
+ |
+ +-- 6T-5   k3 semigroup
+ +-- 3T-2   k7 QR semigroup
+ +-- 2T-1   k11 QR/thin packet
+ +-- 3T-1   k15 subgroup semigroup
+ +-- 6T-1   k19 cyclic state
+ +-- 6T      q23 same-class Omega-two rescue.
 ```
 
-The mixed `5*14`, the valuation-one defects, and the pure quadratic branch remain Type-I misses.
+Priority questions:
 
-Equivalently every q23 Type-I-only rescue in this normal form has:
-
-```text
-C_23 = 6HD
-p    = 24HD - 23
-```
-
-where:
-
-```text
-all prime divisors of H are 1 mod 23
-Omega(D)=2
-all prime divisors of D are 5 mod 23
-or all are 14 mod 23
-```
-
-For a Mordell-hard prime:
-
-```text
-HD mod 35 in {1,6,8,13,16,23}.
-```
-
-Files:
-
-```text
-research/K23-TYPEI-COMPANION-NORMAL-FORM.md
-research/verify_k23_typei_companion_patterns.py
-```
-
-## 7. Exact bridge to the first BREC coordinate
-
-Since:
-
-```text
-C_3 = C_23 - 5,
-```
-
-a q23 Type-I-only rescue with a leading `k=3` miss satisfies:
-
-```text
-C_23 = 6HD
-p    = 24HD - 23
-C_3  = 6HD - 5
-```
-
-and:
-
-```text
-every prime divisor of 6HD-5 is 1 mod 3.
-```
-
-Explicit witnesses prove that this system is realizable for both q23 rescue classes. Therefore no simple `k=3` versus `k=23` incompatibility remains.
-
-## 8. Immediate mathematical frontier
-
-The next exact target is to transport the remaining early shift conditions:
-
-```text
-k = 7, 11, 15, 19
-```
-
-onto the two explicit q23 rescue branches:
-
-```text
-p = 24HD - 23,
-D in the 5^2 or 14^2 class.
-```
-
-The required research order is:
-
-```text
-1. derive the exact k=7 branch condition
-2. generate adversarial 5^2 / 14^2 rescue candidates
-3. preserve explicit counterexamples to any false contraction
-4. identify only those residue/valuation restrictions that survive
-5. repeat for k=11,15,19
-6. promote nothing to pruning without a separate proof and verifier
-```
+1. Which of the 136 k19 miss states remain compatible with the first four exact predecessor laws and each q23 rescue class?
+2. Does the k11 pure/thin branch force a restricted k19 product exponent or canonical atom family?
+3. Do hard `T mod35`, q23 `rho`, and k19 cyclic state form a smaller exact quotient than any coordinate reveals?
+4. What character-vector relations are forced across the pairwise-coprime affine tuple?
+5. Can a genuine cross-coordinate lemma remove an infinite family without contradicting the two mandatory full-corridor witnesses?
 
 ## 9. Research discipline
 
-The k23 coincidence episode establishes the BREC rule:
+The k23 coincidence falsification remains the standing rule:
 
 ```text
 finite contraction
@@ -253,16 +268,12 @@ finite contraction
                 -> only then pruning authority
 ```
 
-This applies to motifs, spectrum-conditioned absences, prefix cylinders, valuation patterns, and scheduler heuristics alike.
+This applies to motifs, prefix cylinders, residue patterns, state absences, and scheduler heuristics alike.
 
 ## 10. Claim boundary
 
-The exact new results are:
+The fixed-shift normal forms, pairwise-coprime theorem, q23 integer rescue normal form, and k19 finite-group state closure are exact statements with executable verification.
 
-```text
-k3 BREC obstruction normal form
-q23 Type-I companion six-state classification
-explicit falsification of ancestry-coincidence depths 1..5
-```
+The 30M branch collapse is finite evidence only.
 
 No result here proves Erdős–Straus, a universal finite Lane-I ceiling, or a complete closed decomposition method.
