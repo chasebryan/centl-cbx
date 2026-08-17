@@ -7,6 +7,7 @@ on:
       - 'research/verify_k19_nr_valuation_budget.py'
       - 'research/verify_h169_k11_future_factor_partition.py'
       - 'research/verify_h169_k11_phase_k43_seed.py'
+      - 'research/verify_h169_k11_phase_k51_composite_shield.py'
       - 'research/analyze_h169_cross_obligation_core.py'
       - 'research/H169-CROSS-OBLIGATION-CORE.md'
       - '.github/workflows/h169-cross-obligation-core.yml'
@@ -17,6 +18,7 @@ on:
       - 'research/verify_k19_nr_valuation_budget.py'
       - 'research/verify_h169_k11_future_factor_partition.py'
       - 'research/verify_h169_k11_phase_k43_seed.py'
+      - 'research/verify_h169_k11_phase_k51_composite_shield.py'
       - 'research/analyze_h169_cross_obligation_core.py'
       - '.github/workflows/h169-cross-obligation-core.yml'
 
@@ -37,6 +39,7 @@ jobs:
             research/verify_k19_nr_valuation_budget.py \
             research/verify_h169_k11_future_factor_partition.py \
             research/verify_h169_k11_phase_k43_seed.py \
+            research/verify_h169_k11_phase_k51_composite_shield.py \
             research/analyze_h169_cross_obligation_core.py
 
       - name: Run cross-core self-test
@@ -63,6 +66,13 @@ jobs:
             --state-json '{"t_mod_11":2}' \
             > /tmp/h169-cross-k43.json
 
+      - name: Emit live phase-0 k51 shield ledger
+        run: |
+          python3 research/analyze_h169_cross_obligation_core.py \
+            --route B \
+            --state-json '{"t_mod_11":0}' \
+            > /tmp/h169-cross-k51.json
+
       - name: Validate exact explanations
         run: |
           python3 - <<'PY'
@@ -72,8 +82,9 @@ jobs:
           bad = json.loads(Path('/tmp/h169-cross-core.json').read_text())
           live = json.loads(Path('/tmp/h169-cross-live.json').read_text())
           k43 = json.loads(Path('/tmp/h169-cross-k43.json').read_text())
+          k51 = json.loads(Path('/tmp/h169-cross-k51.json').read_text())
 
-          assert bad['analysis'] == 'h169-cross-obligation-core-v2'
+          assert bad['analysis'] == 'h169-cross-obligation-core-v3'
           assert bad['base_surviving_formal_tuples'] == 147900
           assert bad['cross_surviving_formal_tuples'] == 0
           assert bad['contradiction'] is True
@@ -114,7 +125,7 @@ jobs:
           assert factor['k19_TypeII_miss_max_Omega_NR'] == 2
           assert factor['positive_NR_edges_inside_seeded_SCCs'] == 0
 
-          assert k43['analysis'] == 'h169-cross-obligation-core-v2'
+          assert k43['analysis'] == 'h169-cross-obligation-core-v3'
           assert k43['contradiction'] is False
           obligations = k43['obligations']
           assert obligations['forced']['t_mod_11'] == 2
@@ -131,6 +142,30 @@ jobs:
           assert resource['positive_NR_edges_inside_seeded_SCCs'] == 0
           assert resource['state_ratio'] == '2317/18048'
           assert resource['states_removed'] == 15731
+
+          assert k51['analysis'] == 'h169-cross-obligation-core-v3'
+          assert k51['contradiction'] is False
+          obligations = k51['obligations']
+          assert obligations['forced']['t_mod_11'] == 0
+          resource = obligations['k51_composite_shield_obligation']
+          assert resource['literal_prime'] == 11
+          assert resource['destination_shift'] == 51
+          assert resource['forced_consequence'] == '11|C51'
+          assert resource['generic_TypeII_miss_states'] == 3337
+          assert resource['seed11_TypeII_miss_states'] == 636
+          assert resource['seed11_combined_miss_states'] == 268
+          assert resource['seed11_TypeI_only_states'] == 368
+          assert resource['state_ratio'] == '636/3337'
+          assert resource['states_removed'] == 2701
+          assert resource['shield_order'] == 16
+          assert resource['shield_index'] == 2
+          assert resource['shield_characterization'] == 'kernel of Jacobi symbol (./51)'
+          assert resource['shield_generator_order'] == 16
+          assert resource['TypeII_target_outside_shield'] is True
+          assert resource['TypeI_base_outside_shield'] is True
+          assert resource['support_saturation_exponent'] == 8
+          assert resource['persistent_cycle_length'] == 16
+          assert resource['local_factor11_multiplicity_ceiling'] is None
           PY
 
       - name: Preserve explanation artifacts
@@ -141,5 +176,6 @@ jobs:
             /tmp/h169-cross-core.json
             /tmp/h169-cross-live.json
             /tmp/h169-cross-k43.json
+            /tmp/h169-cross-k51.json
           if-no-files-found: error
           retention-days: 30
