@@ -1,0 +1,77 @@
+name: k23 BREC companion exact checks
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k23_typei_companion_patterns.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/K23-BREC-TWO-TARGET-COINCIDENCE.md'
+      - '.github/workflows/k23-brec-companion.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k23_typei_companion_patterns.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - '.github/workflows/k23-brec-companion.yml'
+
+jobs:
+  exact-k23-companion:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact research verifiers
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/verify_k23_typei_companion_patterns.py \
+            research/verify_k23_brec_ancestry_falsifiers.py
+
+      - name: Verify q23 Type-I companion residue classification
+        run: |
+          python3 research/verify_k23_typei_companion_patterns.py \
+            > /tmp/k23-companion-patterns.json
+
+      - name: Verify ancestry-coincidence falsifiers
+        run: |
+          python3 research/verify_k23_brec_ancestry_falsifiers.py \
+            > /tmp/k23-ancestry-falsifiers.json
+
+      - name: Validate exact conclusions
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          patterns = json.loads(Path('/tmp/k23-companion-patterns.json').read_text())
+          falsifiers = json.loads(Path('/tmp/k23-ancestry-falsifiers.json').read_text())
+
+          assert patterns['verified'] is True
+          assert [p['name'] for p in patterns['type_I_only_patterns']] == ['5^2', '14^2']
+          states = {(s['a5'], s['a14']): s for s in patterns['states']}
+          assert states[(2, 0)]['hit_class'] == 'type-I-only'
+          assert states[(0, 2)]['hit_class'] == 'type-I-only'
+          assert states[(1, 1)]['hit_class'] == 'miss'
+
+          assert falsifiers['verified'] is True
+          assert falsifiers['falsified_depths'] == {
+              '1': 5151841,
+              '2': 8243281,
+              '3': 8243281,
+              '4': 18766609,
+              '5': 18766609,
+          }
+          assert falsifiers['deep_rescue_patterns_realized'] == ['5^2', '14^2']
+          witnesses = {w['p']: w for w in falsifiers['witnesses']}
+          assert witnesses[5151841]['early_history'] == '-++-+'
+          assert witnesses[18766609]['early_history'] == '-----'
+          assert witnesses[27211969]['early_history'] == '-----'
+          assert witnesses[18766609]['k23']['hit_class'] == 'type-I-only'
+          assert witnesses[27211969]['k23']['hit_class'] == 'type-I-only'
+          PY
