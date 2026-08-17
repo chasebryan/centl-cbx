@@ -17,6 +17,7 @@ on:
     paths:
       - 'research/search_q23_typei_rescue_branch.py'
       - 'research/analyze_q23_rescue_k19_frontier.py'
+      - 'research/verify_k19_brec_state_compression.py'
       - 'research/K3-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K7-BREC-OBSTRUCTION-NORMAL-FORM.md'
       - 'research/K11-BREC-OBSTRUCTION-NORMAL-FORM.md'
@@ -41,6 +42,7 @@ jobs:
           python3 -m py_compile \
             kernel/analyze_brec_cylinder.py \
             research/search_q23_typei_rescue_branch.py \
+            research/verify_k19_brec_state_compression.py \
             research/analyze_q23_rescue_k19_frontier.py
 
       - name: Self-test forward rescue branch
@@ -74,11 +76,23 @@ jobs:
           assert obj['required_parent_prefix'] == '----'
           assert obj['candidates'] == obj['k19_misses'] + obj['k19_constructive']
           assert sum(obj['k19_hit_classes'].values()) == obj['candidates']
+          assert sum(obj['k19_cyclic_state_counts'].values()) == obj['candidates']
+          assert sum(obj['k19_canonical_depth_counts'].values()) == obj['candidates']
+          assert obj['k19_state_theorem'] == {
+              'reachable_states': 439,
+              'combined_miss_states': 136,
+              'max_canonical_miss_atoms': 3,
+          }
           for hit_class, rows in obj['examples_by_hit_class'].items():
               for row in rows:
                   assert row['early_history'].startswith('----')
                   assert row['k19']['hit_class'] == hit_class
                   assert row['C19'] == 6 * row['M'] - 1
+                  cyclic = row['cyclic_state']
+                  assert cyclic['support_size'] == row['k19']['support_size']
+                  assert cyclic['combined_miss'] == (hit_class == 'miss')
+                  if hit_class == 'miss':
+                      assert cyclic['canonical_depth'] <= 3
           PY
 
       - name: Preserve k19 frontier census
