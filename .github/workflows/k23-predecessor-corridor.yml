@@ -1,0 +1,83 @@
+name: k23 predecessor corridor normal forms
+
+on:
+  pull_request:
+    paths:
+      - 'kernel/analyze_brec_cylinder.py'
+      - 'research/verify_k11_brec_obstruction_normal_form.py'
+      - 'research/verify_k19_brec_state_compression.py'
+      - 'research/verify_k23_brec_ancestry_falsifiers.py'
+      - 'research/verify_k23_typei_only_integer_normal_form.py'
+      - 'research/verify_k23_predecessor_corridor_normal_forms.py'
+      - 'research/K23-PREDECESSOR-CORRIDOR-NORMAL-FORMS.md'
+      - '.github/workflows/k23-predecessor-corridor.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/verify_k23_predecessor_corridor_normal_forms.py'
+      - '.github/workflows/k23-predecessor-corridor.yml'
+
+jobs:
+  exact-corridor:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install Python
+        run: dnf -y install git python3
+
+      - uses: actions/checkout@v4
+
+      - name: Compile exact corridor verifier
+        run: |
+          python3 -m py_compile \
+            kernel/analyze_brec_cylinder.py \
+            research/verify_k11_brec_obstruction_normal_form.py \
+            research/verify_k19_brec_state_compression.py \
+            research/verify_k23_brec_ancestry_falsifiers.py \
+            research/verify_k23_typei_only_integer_normal_form.py \
+            research/verify_k23_predecessor_corridor_normal_forms.py
+
+      - name: Verify five-coordinate predecessor synthesis
+        run: |
+          python3 research/verify_k23_predecessor_corridor_normal_forms.py \
+            > /tmp/k23-predecessor-corridor.json
+
+      - name: Validate exact synthesis
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          obj = json.loads(Path('/tmp/k23-predecessor-corridor.json').read_text())
+          assert obj['verified'] is True
+          assert obj['mode'] == 'k23-predecessor-corridor-normal-forms'
+          assert obj['parameter'] == 'T=(p+23)/24'
+          assert obj['full_five_negative_regressions'] == [18766609, 27211969]
+
+          coords = obj['coordinates']
+          assert coords['k3']['integer'] == '6T-5'
+          assert coords['k7']['integer'] == 'C7=2(3T-2)'
+          assert coords['k11']['integer'] == 'C11=3(2T-1)'
+          assert coords['k15']['integer'] == 'C15=2(3T-1)'
+          assert coords['k19']['integer'] == '6T-1'
+
+          rows = {row['p']: row for row in obj['witnesses']}
+          assert rows[5151841]['early_history'] == '-++-+'
+          assert rows[8243281]['early_history'] == '---++'
+          assert rows[18766609]['early_history'] == '-----'
+          assert rows[27211969]['early_history'] == '-----'
+          assert rows[18766609]['q23_rho'] == 14
+          assert rows[27211969]['q23_rho'] == 5
+          assert all(rows[18766609]['normal_form_misses'].values())
+          assert all(rows[27211969]['normal_form_misses'].values())
+          assert rows[18766609]['k19_state']['combined_miss'] is True
+          assert rows[27211969]['k19_state']['combined_miss'] is True
+          PY
+
+      - name: Preserve synthesis proof object
+        uses: actions/upload-artifact@v4
+        with:
+          name: k23-predecessor-corridor-normal-forms
+          path: /tmp/k23-predecessor-corridor.json
+          if-no-files-found: error
+          retention-days: 30
