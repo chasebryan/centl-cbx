@@ -63,11 +63,15 @@ jobs:
           assert k7['NR7'] == [3, 5, 6]
 
           assert k11['verified'] is True
-          assert k11['QR11'] == [1, 3, 4, 5, 9]
-          assert k11['NR11'] == [2, 6, 7, 8, 10]
-          assert k11['forced_v1_support'] == [1, 3, 4]
-          assert k11['forced_v2_support'] == [1, 3, 4, 5, 9]
-          thin = k11['combined_miss_normal_form']['thin_branch']
-          assert thin['allowed_valuation_pairs_a2_a6'] == [[1, 0], [0, 1], [1, 1]]
-          assert k11['type_I_only_thin_patterns'] == [[2, 0], [0, 2]]
+          assert k11['pure_QR_branch']['combined_miss'] is True
+          states = {(row['a2'], row['a6']): row for row in k11['thin_states']}
+          assert states[(0, 0)]['hit_class'] == 'miss'
+          assert states[(1, 0)]['hit_class'] == 'miss'
+          assert states[(0, 1)]['hit_class'] == 'miss'
+          assert states[(1, 1)]['hit_class'] == 'miss'
+          assert states[(2, 0)]['hit_class'] == 'type-I-only'
+          assert states[(0, 2)]['hit_class'] == 'type-I-only'
+          assert k11['thin_combined_miss_packets'] == [[0, 0], [0, 1], [1, 0], [1, 1]]
+          assert k11['thin_type_I_only_packets'] == [[0, 2], [2, 0]]
+          assert k11['q23_rescue_translation']['C11'] == '3*(2*T-1)'
           PY
