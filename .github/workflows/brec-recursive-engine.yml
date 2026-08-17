@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx_standalone_i.c'
       - 'kernel/src/cbx.c'
+      - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - 'kernel/BREC-ES-APPLICATION.md'
       - 'kernel/DESIGN-LANGUAGE.md'
@@ -13,7 +15,9 @@ on:
     branches: [main]
     paths:
       - 'kernel/src/cbx_brec_i.c'
+      - 'kernel/src/cbx_standalone_i.c'
       - 'kernel/src/cbx.c'
+      - 'kernel/verify_brec_i.py'
       - 'kernel/Makefile'
       - '.github/workflows/brec-recursive-engine.yml'
 
@@ -27,11 +31,19 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Build exact BREC engine
-        run: make -C kernel cbx-brec-i
+      - name: Build BREC and reference engines
+        run: make -C kernel cbx-brec-i cbx-standalone-i
 
       - name: Reference-equivalence self-test
         run: kernel/cbx-brec-i --self-test
+
+      - name: Finite reference census
+        run: |
+          kernel/cbx-standalone-i \
+            --hi 20000 \
+            --i-max 40 \
+            --segment 10000 \
+            > /tmp/standalone-summary.json
 
       - name: Finite recursive census smoke test
         run: |
@@ -43,13 +55,22 @@ jobs:
             --histories /tmp/brec-histories.tsv \
             > /tmp/brec-summary.json
 
-      - name: Validate BREC accounting
+      - name: Verify optimized BREC against exact reference
+        run: |
+          python3 kernel/verify_brec_i.py \
+            /tmp/standalone-summary.json \
+            /tmp/brec-summary.json \
+            --json \
+            > /tmp/brec-equivalence.json
+
+      - name: Validate recursive accounting
         run: |
           python3 - <<'PY'
           import json
           from pathlib import Path
 
           obj = json.loads(Path('/tmp/brec-summary.json').read_text())
+          eq = json.loads(Path('/tmp/brec-equivalence.json').read_text())
           assert obj['mode'] == 'brec-I'
           assert obj['brec_spec'] == 'BREC-v1.0'
           assert obj['application'] == 'CBX-Lane-I-shift-history-v1'
@@ -61,6 +82,8 @@ jobs:
           assert obj['cross']['right_plus'] == obj['constructive']
           assert obj['cross']['left_minus'] == obj['obstructive']
           assert obj['motifs']
+          assert eq['verified'] is True
+          assert eq['constructive'] == obj['constructive']
 
           lines = Path('/tmp/brec-histories.tsv').read_text().splitlines()
           assert lines and lines[0].startswith('p\tspectrum\tstages\tdefined')
