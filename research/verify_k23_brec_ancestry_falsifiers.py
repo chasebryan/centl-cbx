@@ -142,7 +142,7 @@ def verify_witness(
 
 def verify() -> dict[str, Any]:
     witnesses = [
-        verify_witness(5_151_841, "-++-+", 1, "14^2"),
+        verify_witness(5_151_841, "-++-+", 1, "5^2"),
         verify_witness(8_243_281, "---++", 3, "14^2"),
         verify_witness(18_766_609, "-----", 5, "14^2"),
         verify_witness(27_211_969, "-----", 5, "5^2"),
